@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react'
 import type { NoteEntry } from './api'
 
-const ACTION_WIDTH = 160 // two 80px buttons revealed on either side
+const LEFT_ACTIONS_WIDTH = 160 // swipe right reveals: Copiar, Compartir
+const RIGHT_ACTIONS_WIDTH = 240 // swipe left reveals: Editar, Archivar, Eliminar
 
 function formatTime(raw: string): string {
   const date = new Date(raw)
@@ -19,6 +20,7 @@ interface Props {
   note: NoteEntry
   onArchive: (row: number) => void
   onDelete: (row: number) => void
+  onEdit: (row: number, text: string) => void
 }
 
 interface DragState {
@@ -27,14 +29,17 @@ interface DragState {
   dragging: boolean
 }
 
-export default function NoteCard({ note, onArchive, onDelete }: Props) {
+export default function NoteCard({ note, onArchive, onDelete, onEdit }: Props) {
   const [expanded, setExpanded] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(note.text)
   const [offset, setOffset] = useState(0)
   const [copied, setCopied] = useState(false)
   const dragRef = useRef<DragState | null>(null)
   const time = formatTime(note.date)
 
   function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (editing) return
     e.currentTarget.setPointerCapture(e.pointerId)
     dragRef.current = { startX: e.clientX, startOffset: offset, dragging: false }
   }
@@ -49,7 +54,7 @@ export default function NoteCard({ note, onArchive, onDelete }: Props) {
     }
     if (!drag.dragging) return
 
-    setOffset(Math.min(ACTION_WIDTH, Math.max(-ACTION_WIDTH, drag.startOffset + delta)))
+    setOffset(Math.min(LEFT_ACTIONS_WIDTH, Math.max(-RIGHT_ACTIONS_WIDTH, drag.startOffset + delta)))
   }
 
   function handlePointerUp() {
@@ -58,8 +63,8 @@ export default function NoteCard({ note, onArchive, onDelete }: Props) {
 
     if (drag.dragging) {
       setOffset((current) => {
-        if (current > ACTION_WIDTH / 2) return ACTION_WIDTH
-        if (current < -ACTION_WIDTH / 2) return -ACTION_WIDTH
+        if (current > LEFT_ACTIONS_WIDTH / 2) return LEFT_ACTIONS_WIDTH
+        if (current < -RIGHT_ACTIONS_WIDTH / 2) return -RIGHT_ACTIONS_WIDTH
         return 0
       })
     } else if (offset !== 0) {
@@ -100,6 +105,20 @@ export default function NoteCard({ note, onArchive, onDelete }: Props) {
     setOffset(0)
   }
 
+  function startEdit() {
+    setOffset(0)
+    setDraft(note.text)
+    setEditing(true)
+  }
+
+  function saveEdit() {
+    const trimmed = draft.trim()
+    if (trimmed && trimmed !== note.text) {
+      onEdit(note.row, trimmed)
+    }
+    setEditing(false)
+  }
+
   return (
     <li className="note-card-wrapper">
       <div className="note-card-actions note-card-actions--left">
@@ -112,6 +131,9 @@ export default function NoteCard({ note, onArchive, onDelete }: Props) {
       </div>
 
       <div className="note-card-actions note-card-actions--right">
+        <button className="note-action note-action--edit" onClick={startEdit}>
+          Editar
+        </button>
         <button
           className="note-action note-action--archive"
           onClick={() => {
@@ -143,7 +165,25 @@ export default function NoteCard({ note, onArchive, onDelete }: Props) {
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
       >
-        {expanded ? (
+        {editing ? (
+          <div className="note-edit">
+            <textarea
+              className="note-edit-textarea"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              rows={3}
+              autoFocus
+            />
+            <div className="note-edit-buttons">
+              <button className="note-edit-cancel" onClick={() => setEditing(false)}>
+                Cancelar
+              </button>
+              <button className="note-edit-save" onClick={saveEdit}>
+                Guardar
+              </button>
+            </div>
+          </div>
+        ) : expanded ? (
           <>
             <span className="note-time">{time}</span>
             <p className="note-full-text">{note.text}</p>

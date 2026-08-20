@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -78,6 +80,28 @@ public class NotesController {
 
         String spreadsheetUrl = "https://docs.google.com/spreadsheets/d/" + spreadsheetId;
         return Map.of("text", text, "spreadsheetUrl", spreadsheetUrl);
+    }
+
+    @PutMapping("/{row}")
+    public void updateNote(@PathVariable int row,
+                            @RequestBody Map<String, String> body,
+                            @CookieValue(name = SessionCookie.COOKIE_NAME, required = false) String authCookie,
+                            HttpServletResponse response) throws IOException, GeneralSecurityException {
+        AuthenticatedUser user = requireUser(authCookie, response);
+        if (user == null) {
+            return;
+        }
+        String text = body.get("text");
+        if (text == null || text.isBlank()) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        String spreadsheetId = spreadsheetService.findSpreadsheetId(user.userId(), user.credential());
+        if (spreadsheetId == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        sheetService.updateText(spreadsheetId, user.credential(), row, text);
     }
 
     @PostMapping("/{row}/archive")

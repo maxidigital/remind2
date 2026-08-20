@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState } from 'react'
-import { archiveNote, deleteNote, fetchNotes, type NoteEntry } from './api'
+import { archiveNote, deleteNote, fetchNotes, updateNote, type NoteEntry } from './api'
 import NoteCard from './NoteCard'
 
 interface Props {
@@ -64,6 +64,15 @@ export default function NotesList({ refreshKey }: Props) {
     }
   }
 
+  async function handleEdit(row: number, text: string) {
+    setNotes((prev) => (prev ? prev.map((n) => (n.row === row ? { ...n, text } : n)) : prev))
+    try {
+      await updateNote(row, text)
+    } catch {
+      reload()
+    }
+  }
+
   if (notes === null) {
     return <p className="notes-status">Cargando notas…</p>
   }
@@ -79,7 +88,7 @@ export default function NotesList({ refreshKey }: Props) {
         return (
           <Fragment key={note.row}>
             {showSeparator && <li className="day-separator">{dayLabelOf(note.date)}</li>}
-            <NoteCard note={note} onArchive={handleArchive} onDelete={handleDelete} />
+            <NoteCard note={note} onArchive={handleArchive} onDelete={handleDelete} onEdit={handleEdit} />
           </Fragment>
         )
       })}

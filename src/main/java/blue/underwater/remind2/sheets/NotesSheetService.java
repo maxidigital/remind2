@@ -84,6 +84,17 @@ public class NotesSheetService {
         return entries;
     }
 
+    public void updateText(String spreadsheetId, Credential credential, int row, String text)
+            throws IOException, GeneralSecurityException {
+        Sheets sheets = buildSheetsClient(credential);
+
+        ValueRange value = new ValueRange().setValues(List.of(List.of(text)));
+        sheets.spreadsheets().values()
+                .update(spreadsheetId, "B" + row, value)
+                .setValueInputOption("RAW")
+                .execute();
+    }
+
     public void archive(String spreadsheetId, Credential credential, int row) throws IOException, GeneralSecurityException {
         setStatus(spreadsheetId, credential, row, STATUS_ARCHIVED);
     }

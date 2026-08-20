@@ -43,6 +43,17 @@ export async function saveNote(blob: Blob, filename: string): Promise<SaveNoteRe
   return res.json()
 }
 
+export async function updateNote(row: number, text: string): Promise<void> {
+  const res = await fetch(`/api/notes/${row}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  })
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`)
+  }
+}
+
 export async function archiveNote(row: number): Promise<void> {
   const res = await fetch(`/api/notes/${row}/archive`, { method: 'POST' })
   if (!res.ok) {
