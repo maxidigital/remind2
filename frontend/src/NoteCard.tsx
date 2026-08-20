@@ -121,38 +121,42 @@ export default function NoteCard({ note, onArchive, onDelete, onEdit }: Props) {
 
   return (
     <li className="note-card-wrapper">
-      <div className="note-card-actions note-card-actions--left">
-        <button className="note-action note-action--copy" onClick={handleCopy}>
-          {copied ? 'Copiado' : 'Copiar'}
-        </button>
-        <button className="note-action note-action--share" onClick={handleShare}>
-          Compartir
-        </button>
-      </div>
+      {offset > 0 && (
+        <div className="note-card-actions note-card-actions--left">
+          <button className="note-action note-action--copy" onClick={handleCopy}>
+            {copied ? 'Copiado' : 'Copiar'}
+          </button>
+          <button className="note-action note-action--share" onClick={handleShare}>
+            Compartir
+          </button>
+        </div>
+      )}
 
-      <div className="note-card-actions note-card-actions--right">
-        <button className="note-action note-action--edit" onClick={startEdit}>
-          Editar
-        </button>
-        <button
-          className="note-action note-action--archive"
-          onClick={() => {
-            setOffset(0)
-            onArchive(note.row)
-          }}
-        >
-          Archivar
-        </button>
-        <button
-          className="note-action note-action--delete"
-          onClick={() => {
-            setOffset(0)
-            onDelete(note.row)
-          }}
-        >
-          Eliminar
-        </button>
-      </div>
+      {offset < 0 && (
+        <div className="note-card-actions note-card-actions--right">
+          <button className="note-action note-action--edit" onClick={startEdit}>
+            Editar
+          </button>
+          <button
+            className="note-action note-action--archive"
+            onClick={() => {
+              setOffset(0)
+              onArchive(note.row)
+            }}
+          >
+            Archivar
+          </button>
+          <button
+            className="note-action note-action--delete"
+            onClick={() => {
+              setOffset(0)
+              onDelete(note.row)
+            }}
+          >
+            Eliminar
+          </button>
+        </div>
+      )}
 
       <div
         className="note-card"
