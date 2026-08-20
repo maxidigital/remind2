@@ -168,18 +168,32 @@ body {
   border-radius: 14px;
   padding: 0.9rem 1rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
 }
 
-.note-card-date {
-  display: block;
-  font-size: 0.75rem;
+.note-line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  overflow: hidden;
+}
+
+.note-time {
+  flex-shrink: 0;
+  font-size: 0.8rem;
   color: var(--text-muted);
-  margin-bottom: 0.25rem;
-  text-transform: capitalize;
+  font-variant-numeric: tabular-nums;
 }
 
-.note-card-text {
-  margin: 0;
+.note-preview {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.note-full-text {
+  margin: 0.35rem 0 0;
   line-height: 1.4;
   white-space: pre-wrap;
 }

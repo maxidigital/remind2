@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -30,8 +30,11 @@ public class NotesSheetService {
             throws IOException, GeneralSecurityException {
         Sheets sheets = buildSheetsClient(credential);
 
+        // Instant (with trailing "Z") instead of LocalDateTime — the frontend's
+        // `new Date(...)` needs an explicit UTC marker or it misreads the
+        // string as browser-local time and shows the wrong hour.
         ValueRange row = new ValueRange().setValues(
-                List.of(List.of(LocalDateTime.now().toString(), text)));
+                List.of(List.of(Instant.now().toString(), text)));
 
         sheets.spreadsheets().values()
                 .append(spreadsheetId, "A:B", row)

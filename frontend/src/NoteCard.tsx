@@ -1,23 +1,46 @@
+import { useState } from 'react'
 import type { NoteEntry } from './api'
 
-function formatDate(raw: string): string {
+function formatTime(raw: string): string {
   const date = new Date(raw)
   if (Number.isNaN(date.getTime())) {
     return raw
   }
-  return date.toLocaleString('es-AR', {
-    day: '2-digit',
-    month: 'short',
+  return date.toLocaleTimeString('es-AR', {
     hour: '2-digit',
     minute: '2-digit',
+    hour12: false,
   })
 }
 
 export default function NoteCard({ note }: { note: NoteEntry }) {
+  const [expanded, setExpanded] = useState(false)
+  const time = formatTime(note.date)
+
   return (
-    <li className="note-card">
-      <span className="note-card-date">{formatDate(note.date)}</span>
-      <p className="note-card-text">{note.text}</p>
+    <li
+      className="note-card"
+      role="button"
+      tabIndex={0}
+      onClick={() => setExpanded((e) => !e)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          setExpanded((v) => !v)
+        }
+      }}
+    >
+      {expanded ? (
+        <>
+          <span className="note-time">{time}</span>
+          <p className="note-full-text">{note.text}</p>
+        </>
+      ) : (
+        <div className="note-line">
+          <span className="note-time">{time}</span>
+          <span className="note-preview">{note.text}</span>
+        </div>
+      )}
     </li>
   )
 }
