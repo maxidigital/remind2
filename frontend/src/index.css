@@ -182,9 +182,16 @@ body {
 .note-card-actions {
   position: absolute;
   top: 0;
-  right: 0;
   bottom: 0;
   display: flex;
+}
+
+.note-card-actions--right {
+  right: 0;
+}
+
+.note-card-actions--left {
+  left: 0;
 }
 
 .note-action {
@@ -194,6 +201,14 @@ body {
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
+}
+
+.note-action--copy {
+  background: #10b981;
+}
+
+.note-action--share {
+  background: var(--accent);
 }
 
 .note-action--archive {

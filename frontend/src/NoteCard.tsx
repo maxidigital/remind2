@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import type { NoteEntry } from './api'
 
-const ACTION_WIDTH = 160 // two 80px buttons revealed behind the card
+const ACTION_WIDTH = 160 // two 80px buttons revealed on either side
 
 function formatTime(raw: string): string {
   const date = new Date(raw)
@@ -30,6 +30,7 @@ interface DragState {
 export default function NoteCard({ note, onArchive, onDelete }: Props) {
   const [expanded, setExpanded] = useState(false)
   const [offset, setOffset] = useState(0)
+  const [copied, setCopied] = useState(false)
   const dragRef = useRef<DragState | null>(null)
   const time = formatTime(note.date)
 
@@ -48,7 +49,7 @@ export default function NoteCard({ note, onArchive, onDelete }: Props) {
     }
     if (!drag.dragging) return
 
-    setOffset(Math.min(0, Math.max(-ACTION_WIDTH, drag.startOffset + delta)))
+    setOffset(Math.min(ACTION_WIDTH, Math.max(-ACTION_WIDTH, drag.startOffset + delta)))
   }
 
   function handlePointerUp() {
@@ -56,8 +57,12 @@ export default function NoteCard({ note, onArchive, onDelete }: Props) {
     if (!drag) return
 
     if (drag.dragging) {
-      setOffset((current) => (current < -ACTION_WIDTH / 2 ? -ACTION_WIDTH : 0))
-    } else if (offset < 0) {
+      setOffset((current) => {
+        if (current > ACTION_WIDTH / 2) return ACTION_WIDTH
+        if (current < -ACTION_WIDTH / 2) return -ACTION_WIDTH
+        return 0
+      })
+    } else if (offset !== 0) {
       setOffset(0)
     } else {
       setExpanded((v) => !v)
@@ -65,9 +70,48 @@ export default function NoteCard({ note, onArchive, onDelete }: Props) {
     dragRef.current = null
   }
 
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(note.text)
+      setCopied(true)
+      setTimeout(() => {
+        setCopied(false)
+        setOffset(0)
+      }, 600)
+    } catch {
+      setOffset(0)
+    }
+  }
+
+  async function handleShare() {
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: note.text })
+      } catch {
+        // user cancelled — nothing to do
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(note.text)
+      } catch {
+        // ignore
+      }
+    }
+    setOffset(0)
+  }
+
   return (
     <li className="note-card-wrapper">
-      <div className="note-card-actions">
+      <div className="note-card-actions note-card-actions--left">
+        <button className="note-action note-action--copy" onClick={handleCopy}>
+          {copied ? 'Copiado' : 'Copiar'}
+        </button>
+        <button className="note-action note-action--share" onClick={handleShare}>
+          Compartir
+        </button>
+      </div>
+
+      <div className="note-card-actions note-card-actions--right">
         <button
           className="note-action note-action--archive"
           onClick={() => {
