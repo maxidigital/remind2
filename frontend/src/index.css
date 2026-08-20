@@ -8,6 +8,14 @@
   --border: #e5e7eb;
 }
 
+[data-theme="dark"] {
+  --bg: #101014;
+  --card-bg: #1c1c24;
+  --text: #f1f1f5;
+  --text-muted: #9aa0ac;
+  --border: #2c2c36;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -20,6 +28,7 @@ body {
   color: var(--text);
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 #root {
@@ -85,13 +94,52 @@ body {
   color: var(--text-muted);
 }
 
-.btn-link {
+.menu {
+  position: relative;
+}
+
+.menu-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
-  color: var(--accent);
-  font-size: 0.9rem;
+  color: var(--text);
   cursor: pointer;
   padding: 0.5rem;
+}
+
+.menu-dropdown {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  min-width: 180px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  z-index: 10;
+}
+
+.menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  background: none;
+  border: none;
+  font-size: 0.9rem;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.menu-item:hover {
+  background: var(--bg);
+}
+
+.menu-item--danger {
+  color: var(--accent-recording);
 }
 
 .notes-area {

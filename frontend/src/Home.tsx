@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { logout } from './api'
 import Recorder from './Recorder'
 import NotesList from './NotesList'
+import Menu from './Menu'
 
 interface Props {
   email: string
@@ -20,9 +21,7 @@ export default function Home({ email, onLoggedOut }: Props) {
     <div className="app">
       <header className="header">
         <span className="header-email">{email}</span>
-        <button className="btn-link" onClick={handleLogout}>
-          Salir
-        </button>
+        <Menu onLogout={handleLogout} />
       </header>
 
       <main className="notes-area">
