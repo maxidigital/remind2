@@ -15,8 +15,9 @@ import java.util.UUID;
 /**
  * Adapted from re.mind's GPTVoice (admin/openai.admin): same Whisper call,
  * but the API key comes from an env var (the original hardcodes it) and the
- * temp file extension is generic instead of fixed to .ogg, since the browser
- * records audio/webm.
+ * temp file extension matches whatever the browser actually recorded
+ * (webm on Chrome/Android, mp4 on Safari/iOS) instead of being fixed to
+ * .ogg — Whisper needs the right extension to pick the right decoder.
  */
 @Service
 public class WhisperTranscriptionService {
@@ -28,7 +29,8 @@ public class WhisperTranscriptionService {
     }
 
     public String transcribe(MultipartFile audio) throws IOException {
-        File tempFile = File.createTempFile("recording-" + UUID.randomUUID(), ".webm");
+        String extension = extensionOf(audio.getOriginalFilename());
+        File tempFile = File.createTempFile("recording-" + UUID.randomUUID(), extension);
         try {
             audio.transferTo(tempFile);
 
@@ -41,5 +43,12 @@ public class WhisperTranscriptionService {
         } finally {
             tempFile.delete();
         }
+    }
+
+    private static String extensionOf(String originalFilename) {
+        if (originalFilename != null && originalFilename.contains(".")) {
+            return originalFilename.substring(originalFilename.lastIndexOf('.'));
+        }
+        return ".webm";
     }
 }

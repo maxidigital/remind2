@@ -1,3 +1,13 @@
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /frontend
+
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+
+COPY frontend/ .
+RUN npm run build
+
 FROM eclipse-temurin:17-jdk-jammy AS builder
 
 RUN apt-get update && apt-get install -y maven && rm -rf /var/lib/apt/lists/*
@@ -6,6 +16,7 @@ WORKDIR /build
 
 COPY pom.xml ./
 COPY src ./src
+COPY --from=frontend-builder /frontend/dist ./src/main/resources/static
 
 RUN mvn clean package -DskipTests
 

@@ -1,0 +1,201 @@
+:root {
+  --accent: #4f46e5;
+  --accent-recording: #ef4444;
+  --bg: #f7f7fb;
+  --card-bg: #ffffff;
+  --text: #1a1a2e;
+  --text-muted: #6b7280;
+  --border: #e5e7eb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#root {
+  min-height: 100dvh;
+}
+
+.screen-center {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  text-align: center;
+}
+
+.login h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.75rem;
+}
+
+.login p {
+  color: var(--text-muted);
+  margin: 0 0 2rem;
+  max-width: 320px;
+}
+
+.btn {
+  display: inline-block;
+  padding: 0.85rem 1.75rem;
+  border-radius: 999px;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: white;
+}
+
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: calc(140px + env(safe-area-inset-bottom));
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  padding-top: calc(1rem + env(safe-area-inset-top));
+}
+
+.header-email {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+.notes-area {
+  flex: 1;
+  padding: 0 1rem;
+}
+
+.notes-status {
+  text-align: center;
+  color: var(--text-muted);
+  margin-top: 3rem;
+}
+
+.notes-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.note-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.note-card-date {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+  text-transform: capitalize;
+}
+
+.note-card-text {
+  margin: 0;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.recorder {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.25rem 0 calc(1.5rem + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--bg) 60%, transparent);
+}
+
+.record-button {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.record-button:active {
+  transform: scale(0.95);
+}
+
+.record-button--recording {
+  background: var(--accent-recording);
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.record-button--saving {
+  opacity: 0.6;
+  cursor: default;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 14px rgba(239, 68, 68, 0);
+  }
+}
+
+.recorder-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.recorder-error {
+  color: var(--accent-recording);
+  font-size: 0.85rem;
+  margin: 0;
+}

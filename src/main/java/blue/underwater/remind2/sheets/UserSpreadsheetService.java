@@ -33,6 +33,34 @@ public class UserSpreadsheetService {
 
     public String getOrCreateSpreadsheetId(String userId, Credential credential)
             throws IOException, GeneralSecurityException {
+        String existingId = findSpreadsheetId(userId, credential);
+        if (existingId != null) {
+            return existingId;
+        }
+
+        NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+        Drive drive = new Drive.Builder(httpTransport, GsonFactory.getDefaultInstance(), credential)
+                .setApplicationName(SPREADSHEET_NAME)
+                .build();
+
+        File metadata = new File()
+                .setName(SPREADSHEET_NAME)
+                .setMimeType("application/vnd.google-apps.spreadsheet");
+        File created = drive.files().create(metadata).execute();
+        String spreadsheetId = created.getId();
+        writeHeader(credential, httpTransport, spreadsheetId);
+
+        spreadsheetIdCache.put(userId, spreadsheetId);
+        return spreadsheetId;
+    }
+
+    /**
+     * Returns the user's spreadsheet id if it already exists, without
+     * creating one — used by the read path (GET /api/notes) so viewing an
+     * empty note list doesn't create a spreadsheet.
+     */
+    public String findSpreadsheetId(String userId, Credential credential)
+            throws IOException, GeneralSecurityException {
         String cached = spreadsheetIdCache.get(userId);
         if (cached != null) {
             return cached;
@@ -48,18 +76,11 @@ public class UserSpreadsheetService {
                 .setSpaces("drive")
                 .execute();
 
-        String spreadsheetId;
-        if (existing.getFiles() != null && !existing.getFiles().isEmpty()) {
-            spreadsheetId = existing.getFiles().get(0).getId();
-        } else {
-            File metadata = new File()
-                    .setName(SPREADSHEET_NAME)
-                    .setMimeType("application/vnd.google-apps.spreadsheet");
-            File created = drive.files().create(metadata).execute();
-            spreadsheetId = created.getId();
-            writeHeader(credential, httpTransport, spreadsheetId);
+        if (existing.getFiles() == null || existing.getFiles().isEmpty()) {
+            return null;
         }
 
+        String spreadsheetId = existing.getFiles().get(0).getId();
         spreadsheetIdCache.put(userId, spreadsheetId);
         return spreadsheetId;
     }
