@@ -13,15 +13,9 @@ FROM eclipse-temurin:17-jre-jammy
 
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
-RUN addgroup --system spring && adduser --system --group spring
-
 WORKDIR /app
 
 COPY --from=builder /build/target/re.mind2-*.jar app.jar
-
-RUN chown -R spring:spring /app
-
-USER spring
 
 EXPOSE 8080
 
