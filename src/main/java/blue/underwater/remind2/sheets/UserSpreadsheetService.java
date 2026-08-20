@@ -90,9 +90,9 @@ public class UserSpreadsheetService {
                 .setApplicationName(SPREADSHEET_NAME)
                 .build();
 
-        ValueRange header = new ValueRange().setValues(List.of(List.of("Date", "Text")));
+        ValueRange header = new ValueRange().setValues(List.of(List.of("Date", "Text", "Status")));
         sheets.spreadsheets().values()
-                .update(spreadsheetId, "A1:B1", header)
+                .update(spreadsheetId, "A1:C1", header)
                 .setValueInputOption("RAW")
                 .execute();
     }
