@@ -45,7 +45,7 @@ export default function Menu({ onLogout }: Props) {
             className="menu-item"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           >
-            {theme === 'dark' ? '☀️ Modo claro' : '🌙 Modo oscuro'}
+            {theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
           </button>
           <button className="menu-item menu-item--danger" onClick={onLogout}>
             Salir

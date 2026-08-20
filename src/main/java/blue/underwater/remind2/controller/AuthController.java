@@ -2,8 +2,10 @@ package blue.underwater.remind2.controller;
 
 import blue.underwater.remind2.auth.GoogleAuthService;
 import blue.underwater.remind2.auth.GoogleIdentity;
+import blue.underwater.remind2.auth.SessionCookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,10 +19,14 @@ import java.util.UUID;
 @RestController
 public class AuthController {
 
-    private final GoogleAuthService authService;
+    private static final int COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 180; // 180 days
 
-    public AuthController(GoogleAuthService authService) {
+    private final GoogleAuthService authService;
+    private final SessionCookie sessionCookie;
+
+    public AuthController(GoogleAuthService authService, SessionCookie sessionCookie) {
         this.authService = authService;
+        this.sessionCookie = sessionCookie;
     }
 
     @GetMapping("/login")
@@ -43,27 +49,33 @@ public class AuthController {
         session.removeAttribute("oauthState");
 
         GoogleIdentity identity = authService.handleCallback(code);
-        session.setAttribute("userId", identity.sub());
-        session.setAttribute("email", identity.email());
+        setAuthCookie(response, sessionCookie.create(identity.sub(), identity.email()));
         response.sendRedirect("/");
     }
 
     @GetMapping("/api/me")
-    public Map<String, Object> me(HttpSession session) {
-        Object userId = session.getAttribute("userId");
+    public Map<String, Object> me(@CookieValue(name = SessionCookie.COOKIE_NAME, required = false) String authCookie) {
+        SessionCookie.Identity identity = sessionCookie.verify(authCookie);
         Map<String, Object> result = new HashMap<>();
-        if (userId == null) {
+        if (identity == null) {
             result.put("authenticated", false);
         } else {
             result.put("authenticated", true);
-            result.put("email", session.getAttribute("email"));
+            result.put("email", identity.email());
         }
         return result;
     }
 
     @PostMapping("/logout")
-    public void logout(HttpSession session, HttpServletResponse response) throws IOException {
-        session.invalidate();
-        response.sendRedirect("/");
+    public void logout(HttpServletResponse response) {
+        setAuthCookie(response, "");
+    }
+
+    private void setAuthCookie(HttpServletResponse response, String value) {
+        int maxAge = value.isEmpty() ? 0 : COOKIE_MAX_AGE_SECONDS;
+        response.addHeader("Set-Cookie",
+                SessionCookie.COOKIE_NAME + "=" + value
+                        + "; Path=/; Max-Age=" + maxAge
+                        + "; HttpOnly; Secure; SameSite=Lax");
     }
 }

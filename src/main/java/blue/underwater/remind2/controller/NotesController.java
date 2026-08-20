@@ -1,12 +1,13 @@
 package blue.underwater.remind2.controller;
 
+import blue.underwater.remind2.auth.SessionCookie;
 import blue.underwater.remind2.auth.UserCredentialsStore;
 import blue.underwater.remind2.sheets.NotesSheetService;
 import blue.underwater.remind2.sheets.UserSpreadsheetService;
 import blue.underwater.remind2.transcription.WhisperTranscriptionService;
 import com.google.api.client.auth.oauth2.Credential;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,68 +24,73 @@ import java.util.Map;
 @RequestMapping("/api/notes")
 public class NotesController {
 
+    private final SessionCookie sessionCookie;
     private final UserCredentialsStore credentialsStore;
     private final WhisperTranscriptionService transcriptionService;
     private final UserSpreadsheetService spreadsheetService;
     private final NotesSheetService sheetService;
 
-    public NotesController(UserCredentialsStore credentialsStore,
+    public NotesController(SessionCookie sessionCookie,
+                            UserCredentialsStore credentialsStore,
                             WhisperTranscriptionService transcriptionService,
                             UserSpreadsheetService spreadsheetService,
                             NotesSheetService sheetService) {
+        this.sessionCookie = sessionCookie;
         this.credentialsStore = credentialsStore;
         this.transcriptionService = transcriptionService;
         this.spreadsheetService = spreadsheetService;
         this.sheetService = sheetService;
     }
 
+    private record AuthenticatedUser(String userId, Credential credential) {
+    }
+
     @GetMapping
-    public Map<String, Object> listNotes(HttpSession session, HttpServletResponse response) throws IOException, GeneralSecurityException {
-        Credential credential = requireCredential(session, response);
-        if (credential == null) {
+    public Map<String, Object> listNotes(@CookieValue(name = SessionCookie.COOKIE_NAME, required = false) String authCookie,
+                                          HttpServletResponse response) throws IOException, GeneralSecurityException {
+        AuthenticatedUser user = requireUser(authCookie, response);
+        if (user == null) {
             return null;
         }
 
-        String userId = (String) session.getAttribute("userId");
-        String spreadsheetId = spreadsheetService.findSpreadsheetId(userId, credential);
+        String spreadsheetId = spreadsheetService.findSpreadsheetId(user.userId(), user.credential());
         if (spreadsheetId == null) {
             return Map.of("notes", List.of());
         }
 
-        return Map.of("notes", sheetService.readAll(spreadsheetId, credential));
+        return Map.of("notes", sheetService.readAll(spreadsheetId, user.credential()));
     }
 
     @PostMapping
     public Map<String, String> saveNote(@RequestParam("audio") MultipartFile audio,
-                                         HttpSession session,
+                                         @CookieValue(name = SessionCookie.COOKIE_NAME, required = false) String authCookie,
                                          HttpServletResponse response) throws IOException, GeneralSecurityException {
-        Credential credential = requireCredential(session, response);
-        if (credential == null) {
+        AuthenticatedUser user = requireUser(authCookie, response);
+        if (user == null) {
             return null;
         }
 
-        String userId = (String) session.getAttribute("userId");
         String text = transcriptionService.transcribe(audio);
-        String spreadsheetId = spreadsheetService.getOrCreateSpreadsheetId(userId, credential);
-        sheetService.append(spreadsheetId, credential, text);
+        String spreadsheetId = spreadsheetService.getOrCreateSpreadsheetId(user.userId(), user.credential());
+        sheetService.append(spreadsheetId, user.credential(), text);
 
         String spreadsheetUrl = "https://docs.google.com/spreadsheets/d/" + spreadsheetId;
         return Map.of("text", text, "spreadsheetUrl", spreadsheetUrl);
     }
 
-    private Credential requireCredential(HttpSession session, HttpServletResponse response) throws IOException {
-        String userId = (String) session.getAttribute("userId");
-        if (userId == null) {
+    private AuthenticatedUser requireUser(String authCookie, HttpServletResponse response) throws IOException {
+        SessionCookie.Identity identity = sessionCookie.verify(authCookie);
+        if (identity == null) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             return null;
         }
 
-        Credential credential = credentialsStore.getCredentials(userId);
+        Credential credential = credentialsStore.getCredentials(identity.userId());
         if (credential == null) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "No Google credentials, please log in again");
             return null;
         }
 
-        return credential;
+        return new AuthenticatedUser(identity.userId(), credential);
     }
 }

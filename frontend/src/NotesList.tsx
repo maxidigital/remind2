@@ -1,9 +1,34 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { fetchNotes, type NoteEntry } from './api'
 import NoteCard from './NoteCard'
 
 interface Props {
   refreshKey: number
+}
+
+function dayKeyOf(rawDate: string): string {
+  const date = new Date(rawDate)
+  return Number.isNaN(date.getTime()) ? rawDate : date.toDateString()
+}
+
+function dayLabelOf(rawDate: string): string {
+  const date = new Date(rawDate)
+  if (Number.isNaN(date.getTime())) {
+    return rawDate
+  }
+
+  const now = new Date()
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+  const diffDays = Math.round((startOfDay(now) - startOfDay(date)) / 86_400_000)
+
+  if (diffDays === 0) return 'Hoy'
+  if (diffDays === 1) return 'Ayer'
+
+  return date.toLocaleDateString('es-AR', {
+    day: 'numeric',
+    month: 'long',
+    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+  })
 }
 
 export default function NotesList({ refreshKey }: Props) {
@@ -25,9 +50,15 @@ export default function NotesList({ refreshKey }: Props) {
 
   return (
     <ul className="notes-list">
-      {notes.map((note, i) => (
-        <NoteCard key={i} note={note} />
-      ))}
+      {notes.map((note, i) => {
+        const showSeparator = i === 0 || dayKeyOf(note.date) !== dayKeyOf(notes[i - 1].date)
+        return (
+          <Fragment key={i}>
+            {showSeparator && <li className="day-separator">{dayLabelOf(note.date)}</li>}
+            <NoteCard note={note} />
+          </Fragment>
+        )
+      })}
     </ul>
   )
 }
