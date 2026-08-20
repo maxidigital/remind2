@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState } from 'react'
-import { fetchNotes, type NoteEntry } from './api'
+import { archiveNote, deleteNote, fetchNotes, type NoteEntry } from './api'
 import NoteCard from './NoteCard'
 
 interface Props {
@@ -40,6 +40,30 @@ export default function NotesList({ refreshKey }: Props) {
       .catch(() => setNotes([]))
   }, [refreshKey])
 
+  function reload() {
+    fetchNotes()
+      .then(setNotes)
+      .catch(() => setNotes([]))
+  }
+
+  async function handleArchive(row: number) {
+    setNotes((prev) => (prev ? prev.filter((n) => n.row !== row) : prev))
+    try {
+      await archiveNote(row)
+    } catch {
+      reload()
+    }
+  }
+
+  async function handleDelete(row: number) {
+    setNotes((prev) => (prev ? prev.filter((n) => n.row !== row) : prev))
+    try {
+      await deleteNote(row)
+    } catch {
+      reload()
+    }
+  }
+
   if (notes === null) {
     return <p className="notes-status">Cargando notas…</p>
   }
@@ -53,9 +77,9 @@ export default function NotesList({ refreshKey }: Props) {
       {notes.map((note, i) => {
         const showSeparator = i === 0 || dayKeyOf(note.date) !== dayKeyOf(notes[i - 1].date)
         return (
-          <Fragment key={i}>
+          <Fragment key={note.row}>
             {showSeparator && <li className="day-separator">{dayLabelOf(note.date)}</li>}
-            <NoteCard note={note} />
+            <NoteCard note={note} onArchive={handleArchive} onDelete={handleDelete} />
           </Fragment>
         )
       })}

@@ -4,6 +4,7 @@ export interface MeResponse {
 }
 
 export interface NoteEntry {
+  row: number
   date: string
   text: string
 }
@@ -40,4 +41,18 @@ export async function saveNote(blob: Blob, filename: string): Promise<SaveNoteRe
     throw new Error(`HTTP ${res.status}`)
   }
   return res.json()
+}
+
+export async function archiveNote(row: number): Promise<void> {
+  const res = await fetch(`/api/notes/${row}/archive`, { method: 'POST' })
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`)
+  }
+}
+
+export async function deleteNote(row: number): Promise<void> {
+  const res = await fetch(`/api/notes/${row}`, { method: 'DELETE' })
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`)
+  }
 }

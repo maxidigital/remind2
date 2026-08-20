@@ -8,7 +8,9 @@ import blue.underwater.remind2.transcription.WhisperTranscriptionService;
 import com.google.api.client.auth.oauth2.Credential;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -76,6 +78,38 @@ public class NotesController {
 
         String spreadsheetUrl = "https://docs.google.com/spreadsheets/d/" + spreadsheetId;
         return Map.of("text", text, "spreadsheetUrl", spreadsheetUrl);
+    }
+
+    @PostMapping("/{row}/archive")
+    public void archiveNote(@PathVariable int row,
+                             @CookieValue(name = SessionCookie.COOKIE_NAME, required = false) String authCookie,
+                             HttpServletResponse response) throws IOException, GeneralSecurityException {
+        AuthenticatedUser user = requireUser(authCookie, response);
+        if (user == null) {
+            return;
+        }
+        String spreadsheetId = spreadsheetService.findSpreadsheetId(user.userId(), user.credential());
+        if (spreadsheetId == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        sheetService.archive(spreadsheetId, user.credential(), row);
+    }
+
+    @DeleteMapping("/{row}")
+    public void deleteNote(@PathVariable int row,
+                            @CookieValue(name = SessionCookie.COOKIE_NAME, required = false) String authCookie,
+                            HttpServletResponse response) throws IOException, GeneralSecurityException {
+        AuthenticatedUser user = requireUser(authCookie, response);
+        if (user == null) {
+            return;
+        }
+        String spreadsheetId = spreadsheetService.findSpreadsheetId(user.userId(), user.credential());
+        if (spreadsheetId == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        sheetService.delete(spreadsheetId, user.credential(), row);
     }
 
     private AuthenticatedUser requireUser(String authCookie, HttpServletResponse response) throws IOException {

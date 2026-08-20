@@ -19,11 +19,22 @@ import java.util.List;
  * Adapted from re.mind's EntriesBookSheetAdmin, but using values().append()
  * instead of a manually tracked lastRow/COUNTA formula, and with a read
  * path (readAll) for the notes list.
+ *
+ * Column C holds a soft-delete status ("archived"/"deleted"). Archiving and
+ * deleting both just set this column instead of touching row indices in the
+ * sheet — physically removing a row (batchUpdate deleteDimension) would
+ * shift every row after it, and two quick actions in the app could then
+ * target the wrong row before the frontend refetches. Soft status avoids
+ * that entirely, and as a side effect nothing the user recorded is ever
+ * truly gone from their own spreadsheet.
  */
 @Component
 public class NotesSheetService {
 
-    public record NoteEntry(String date, String text) {
+    private static final String STATUS_ARCHIVED = "archived";
+    private static final String STATUS_DELETED = "deleted";
+
+    public record NoteEntry(int row, String date, String text) {
     }
 
     public void append(String spreadsheetId, Credential credential, String text)
@@ -47,7 +58,7 @@ public class NotesSheetService {
         Sheets sheets = buildSheetsClient(credential);
 
         ValueRange result = sheets.spreadsheets().values()
-                .get(spreadsheetId, "A:B")
+                .get(spreadsheetId, "A:C")
                 .execute();
 
         List<List<Object>> rows = result.getValues();
@@ -56,14 +67,40 @@ public class NotesSheetService {
         }
 
         List<NoteEntry> entries = new ArrayList<>();
-        for (List<Object> row : rows.subList(1, rows.size())) {
+        for (int i = 1; i < rows.size(); i++) {
+            List<Object> row = rows.get(i);
+            String status = row.size() > 2 ? String.valueOf(row.get(2)) : "";
+            if (STATUS_ARCHIVED.equals(status) || STATUS_DELETED.equals(status)) {
+                continue;
+            }
+
             String date = row.size() > 0 ? String.valueOf(row.get(0)) : "";
             String text = row.size() > 1 ? String.valueOf(row.get(1)) : "";
-            entries.add(new NoteEntry(date, text));
+            int sheetRow = i + 1; // 1-indexed sheet row; header occupies row 1
+            entries.add(new NoteEntry(sheetRow, date, text));
         }
 
         Collections.reverse(entries);
         return entries;
+    }
+
+    public void archive(String spreadsheetId, Credential credential, int row) throws IOException, GeneralSecurityException {
+        setStatus(spreadsheetId, credential, row, STATUS_ARCHIVED);
+    }
+
+    public void delete(String spreadsheetId, Credential credential, int row) throws IOException, GeneralSecurityException {
+        setStatus(spreadsheetId, credential, row, STATUS_DELETED);
+    }
+
+    private void setStatus(String spreadsheetId, Credential credential, int row, String status)
+            throws IOException, GeneralSecurityException {
+        Sheets sheets = buildSheetsClient(credential);
+
+        ValueRange value = new ValueRange().setValues(List.of(List.of(status)));
+        sheets.spreadsheets().values()
+                .update(spreadsheetId, "C" + row, value)
+                .setValueInputOption("RAW")
+                .execute();
     }
 
     private Sheets buildSheetsClient(Credential credential) throws GeneralSecurityException, IOException {

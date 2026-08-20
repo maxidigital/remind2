@@ -173,13 +173,47 @@ body {
   border-radius: 999px;
 }
 
+.note-card-wrapper {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.note-card-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+}
+
+.note-action {
+  width: 80px;
+  border: none;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.note-action--archive {
+  background: #f59e0b;
+}
+
+.note-action--delete {
+  background: var(--accent-recording);
+}
+
 .note-card {
+  position: relative;
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 0.9rem 1rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   cursor: pointer;
+  touch-action: pan-y;
+  user-select: none;
 }
 
 .note-line {
