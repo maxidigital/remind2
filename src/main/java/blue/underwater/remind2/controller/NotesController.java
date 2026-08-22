@@ -87,6 +87,10 @@ public class NotesController {
             throw new UpstreamServiceException("TRANSCRIPTION_FAILED", e);
         }
 
+        if (text == null || text.isBlank()) {
+            return Map.of("text", "");
+        }
+
         String spreadsheetId;
         try {
             spreadsheetId = spreadsheetService.getOrCreateSpreadsheetId(user.userId(), user.credential());

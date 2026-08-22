@@ -12,7 +12,7 @@ export interface NoteEntry {
 
 export interface SaveNoteResponse {
   text: string
-  spreadsheetUrl: string
+  spreadsheetUrl?: string
 }
 
 export async function fetchMe(): Promise<MeResponse> {

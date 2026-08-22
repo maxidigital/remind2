@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { saveNote, SaveNoteError } from './api'
 import { enqueue, removeItem, markBlocked } from './offlineQueue'
+import EmptyRecordingDialog from './EmptyRecordingDialog'
 
 type Status = 'idle' | 'recording' | 'saving' | 'error'
 
@@ -22,6 +23,12 @@ function extensionFor(mimeType: string): string {
   return mimeType.includes('mp4') ? 'mp4' : 'webm'
 }
 
+function formatDuration(totalSeconds: number): string {
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+}
+
 interface Props {
   onSaved: () => void
 }
@@ -29,10 +36,13 @@ interface Props {
 export default function Recorder({ onSaved }: Props) {
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState<string | null>(null)
+  const [showEmpty, setShowEmpty] = useState(false)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const streamRef = useRef<MediaStream | null>(null)
   const wakeLockRef = useRef<WakeLockSentinel | null>(null)
+  const timerRef = useRef<number | null>(null)
 
   async function acquireWakeLock() {
     if (!('wakeLock' in navigator)) return
@@ -89,6 +99,11 @@ export default function Recorder({ onSaved }: Props) {
     recorder.start()
     setStatus('recording')
     acquireWakeLock()
+
+    setElapsedSeconds(0)
+    timerRef.current = window.setInterval(() => {
+      setElapsedSeconds((s) => s + 1)
+    }, 1000)
   }
 
   function stop() {
@@ -96,6 +111,10 @@ export default function Recorder({ onSaved }: Props) {
   }
 
   async function handleStop(mimeType: string) {
+    if (timerRef.current !== null) {
+      window.clearInterval(timerRef.current)
+      timerRef.current = null
+    }
     streamRef.current?.getTracks().forEach((track) => track.stop())
     releaseWakeLock()
     setStatus('saving')
@@ -116,9 +135,13 @@ export default function Recorder({ onSaved }: Props) {
     }
 
     try {
-      await saveNote(blob, filename)
+      const result = await saveNote(blob, filename)
       if (queueId) await removeItem(queueId)
-      onSaved()
+      if (result.text.trim()) {
+        onSaved()
+      } else {
+        setShowEmpty(true)
+      }
       setStatus('idle')
     } catch (err) {
       if (err instanceof SaveNoteError && err.retryable) {
@@ -158,20 +181,23 @@ export default function Recorder({ onSaved }: Props) {
   return (
     <div className="recorder">
       {error && <p className="recorder-error">{error}</p>}
-      <button
-        className={`record-button record-button--${status}`}
-        onClick={handleClick}
-        disabled={status === 'saving'}
-        aria-label={status === 'recording' ? 'Detener grabación' : 'Grabar nota'}
-      >
-        <MicIcon />
-      </button>
+      <div className="recorder-row">
+        <span className="recorder-listening">{status === 'recording' && 'Escuchando'}</span>
+        <button
+          className={`record-button record-button--${status}`}
+          onClick={handleClick}
+          disabled={status === 'saving'}
+          aria-label={status === 'recording' ? 'Detener grabación' : 'Grabar nota'}
+        >
+          <MicIcon />
+        </button>
+        <span className="recorder-timer">{status === 'recording' && formatDuration(elapsedSeconds)}</span>
+      </div>
       <span className="recorder-label">
-        {status === 'recording' && 'Grabando… tocá para terminar'}
         {status === 'saving' && 'Transcribiendo…'}
-        {status === 'idle' && 'Tocá para grabar'}
         {status === 'error' && 'Tocá para reintentar'}
       </span>
+      {showEmpty && <EmptyRecordingDialog onClose={() => setShowEmpty(false)} />}
     </div>
   )
 }
