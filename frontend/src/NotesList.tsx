@@ -37,14 +37,11 @@ type MergedItem =
   | { kind: 'note'; date: string; note: NoteEntry }
   | { kind: 'pending'; date: string; item: QueueItem }
 
-const FADE_START = 3 // las primeras notas se ven a opacidad plena
-const FADE_RANGE = 12 // cantidad de notas hasta llegar a la opacidad mínima
-const FADE_MIN_OPACITY = 0.45
+const FADE_STEP = 0.12 // cuánto baja la opacidad por cada nota más vieja
+const FADE_MIN_OPACITY = 0.4
 
 function fadeOpacity(index: number): number {
-  if (index < FADE_START) return 1
-  const t = Math.min(1, (index - FADE_START) / FADE_RANGE)
-  return 1 - t * (1 - FADE_MIN_OPACITY)
+  return Math.max(FADE_MIN_OPACITY, 1 - index * FADE_STEP)
 }
 
 export default function NotesList({ refreshKey }: Props) {
