@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { NoteEntry } from './api'
 import ConfirmDialog from './ConfirmDialog'
 import { NOTE_COLORS } from './colors'
+import { formatTime } from './time'
 
 const RIGHT_SWIPE_THRESHOLD = 160 // swipe right abre el menú contextual (Compartir/Editar/Copiar)
 const RIGHT_ACTIONS_WIDTH = 160 // swipe left reveals: Archivar, Eliminar
@@ -12,18 +13,6 @@ const MENU_HEIGHT = 290
 const MENU_MARGIN = 12
 const MENU_GAP_FROM_TOUCH = 16
 const GHOST_CLICK_GUARD_MS = 400
-
-function formatTime(raw: string): string {
-  const date = new Date(raw)
-  if (Number.isNaN(date.getTime())) {
-    return raw
-  }
-  return date.toLocaleTimeString('es-AR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  })
-}
 
 interface Props {
   note: NoteEntry

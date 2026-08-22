@@ -1,4 +1,5 @@
 import type { QueueItem } from './offlineQueue'
+import { formatTime } from './time'
 
 function labelFor(item: QueueItem): string {
   if (item.blockedReason === 'AUTH_EXPIRED') return 'Sesión expirada'
@@ -19,6 +20,7 @@ export default function PendingNoteRow({ item, onRetry, onDiscard }: Props) {
     <li className={`note-card-wrapper pending-row${blocked ? ' pending-row--blocked' : ''}`}>
       <div className="note-card pending-card">
         <SoundWaveIcon />
+        <span className="note-time">{formatTime(item.createdAt)}</span>
         <span className="pending-label">{labelFor(item)}</span>
         {blocked && (
           <span className="pending-actions">
