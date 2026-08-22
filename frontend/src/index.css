@@ -94,16 +94,14 @@ body {
 .app {
   max-width: 480px;
   margin: 0 auto;
-  min-height: 100dvh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
-  padding-bottom: calc(140px + env(safe-area-inset-bottom));
+  overflow: hidden;
 }
 
 .header {
-  position: sticky;
-  top: 0;
-  z-index: 5;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -188,7 +186,20 @@ body {
 
 .notes-area {
   flex: 1;
-  padding: 0 1rem;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 1rem calc(140px + env(safe-area-inset-bottom));
+}
+
+.notes-fade {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 160px;
+  margin-top: -160px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--bg));
 }
 
 .notes-status {

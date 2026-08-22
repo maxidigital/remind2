@@ -32,6 +32,7 @@ export default function Home({ email, onLoggedOut }: Props) {
 
       <main className="notes-area">
         <NotesList refreshKey={refreshKey} />
+        <div className="notes-fade" />
       </main>
 
       <Recorder onSaved={() => setRefreshKey((k) => k + 1)} />
