@@ -242,18 +242,24 @@ body {
 .note-action {
   width: 80px;
   border: none;
-  color: white;
+  background: var(--elevated);
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
 }
 
 .note-action--archive {
-  background: #f59e0b;
+  color: var(--status-pending);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--status-pending) 55%, transparent),
+    inset 0 0 14px 2px color-mix(in srgb, var(--status-pending) 35%, transparent);
 }
 
 .note-action--delete {
-  background: var(--danger);
+  color: var(--danger);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--danger) 55%, transparent),
+    inset 0 0 14px 2px color-mix(in srgb, var(--danger) 35%, transparent);
 }
 
 .note-card {
