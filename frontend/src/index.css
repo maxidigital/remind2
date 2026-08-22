@@ -108,6 +108,17 @@ body {
   padding-top: calc(1rem + env(safe-area-inset-top));
 }
 
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.header-icon {
+  height: 26px;
+  width: auto;
+}
+
 .header-logo {
   height: 22px;
   width: auto;

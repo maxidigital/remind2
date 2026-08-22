@@ -23,7 +23,10 @@ export default function Home({ email, onLoggedOut }: Props) {
   return (
     <div className="app">
       <header className="header">
-        <img className="header-logo" src="/remind.png" alt="re.mind2" title={email} />
+        <div className="header-brand" title={email}>
+          <img className="header-icon" src="/remind_circle.png" alt="" />
+          <img className="header-logo" src="/remind.png" alt="re.mind2" />
+        </div>
         <Menu onLogout={handleLogout} />
       </header>
 
