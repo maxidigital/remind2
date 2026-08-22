@@ -342,7 +342,7 @@ export default function NoteCard({ note, onArchive, onDelete, onEdit, onColorCha
 
       {confirmAction && (
         <ConfirmDialog
-          message={confirmAction === 'archive' ? '¿Archivar esta nota?' : '¿Eliminar esta nota? No se puede deshacer.'}
+          message={confirmAction === 'archive' ? '¿Archivar esta nota?' : '¿Eliminar esta nota?'}
           confirmLabel={confirmAction === 'archive' ? 'Archivar' : 'Eliminar'}
           onConfirm={() => {
             if (confirmAction === 'archive') onArchive(note.row)
