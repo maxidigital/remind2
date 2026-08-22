@@ -199,12 +199,23 @@ export function startAutoRetry(): () => void {
   }
   window.addEventListener('online', handleOnline)
 
+  // En mobile el browser pausa los timers y puede no disparar 'online' con la
+  // pestaña en background; al volver a foreground (visibilitychange/focus) no
+  // hay otra señal de que la conexión pudo haber vuelto, así que reintentamos ahí también.
+  function handleForeground() {
+    if (document.visibilityState === 'visible' && navigator.onLine) flushQueue()
+  }
+  document.addEventListener('visibilitychange', handleForeground)
+  window.addEventListener('focus', handleForeground)
+
   const intervalId = window.setInterval(() => {
     if (navigator.onLine) flushQueue()
   }, AUTO_RETRY_INTERVAL_MS)
 
   return () => {
     window.removeEventListener('online', handleOnline)
+    document.removeEventListener('visibilitychange', handleForeground)
+    window.removeEventListener('focus', handleForeground)
     window.clearInterval(intervalId)
   }
 }
