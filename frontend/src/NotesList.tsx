@@ -39,7 +39,18 @@ type MergedItem =
 
 export default function NotesList({ refreshKey }: Props) {
   const [notes, setNotes] = useState<NoteEntry[] | null>(null)
+  const [expandedRow, setExpandedRow] = useState<number | null>(null)
+  const [collapsedDays, setCollapsedDays] = useState<Set<string>>(new Set())
   const pending = usePendingQueue()
+
+  function toggleDay(dayKey: string) {
+    setCollapsedDays((prev) => {
+      const next = new Set(prev)
+      if (next.has(dayKey)) next.delete(dayKey)
+      else next.add(dayKey)
+      return next
+    })
+  }
 
   function reload() {
     fetchNotes()
@@ -105,22 +116,34 @@ export default function NotesList({ refreshKey }: Props) {
   return (
     <ul className="notes-list">
       {merged.map((entry, i) => {
-        const showSeparator = i === 0 || dayKeyOf(entry.date) !== dayKeyOf(merged[i - 1].date)
+        const dayKey = dayKeyOf(entry.date)
+        const showSeparator = i === 0 || dayKey !== dayKeyOf(merged[i - 1].date)
+        const collapsed = collapsedDays.has(dayKey)
         const key = entry.kind === 'note' ? `note-${entry.note.row}` : `pending-${entry.item.id}`
         return (
           <Fragment key={key}>
-            {showSeparator && <li className="day-separator">{dayLabelOf(entry.date)}</li>}
-            {entry.kind === 'note' ? (
-              <NoteCard
-                note={entry.note}
-                onArchive={handleArchive}
-                onDelete={handleDelete}
-                onEdit={handleEdit}
-                onColorChange={handleColorChange}
-              />
-            ) : (
-              <PendingNoteRow item={entry.item} onRetry={retryItem} onDiscard={discardItem} />
+            {showSeparator && (
+              <li
+                className={`day-separator${collapsed ? ' day-separator--collapsed' : ''}`}
+                onClick={() => toggleDay(dayKey)}
+              >
+                {dayLabelOf(entry.date)}
+              </li>
             )}
+            {!collapsed &&
+              (entry.kind === 'note' ? (
+                <NoteCard
+                  note={entry.note}
+                  expanded={entry.note.row === expandedRow}
+                  onToggleExpand={() => setExpandedRow((prev) => (prev === entry.note.row ? null : entry.note.row))}
+                  onArchive={handleArchive}
+                  onDelete={handleDelete}
+                  onEdit={handleEdit}
+                  onColorChange={handleColorChange}
+                />
+              ) : (
+                <PendingNoteRow item={entry.item} onRetry={retryItem} onDiscard={discardItem} />
+              ))}
           </Fragment>
         )
       })}

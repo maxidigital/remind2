@@ -207,6 +207,21 @@ body {
   font-size: 0.75rem;
   font-weight: 600;
   border-radius: 999px;
+  cursor: pointer;
+}
+
+.day-separator::after {
+  content: '';
+  display: inline-block;
+  margin-left: 0.35rem;
+  border: 4px solid transparent;
+  border-top-color: currentColor;
+  vertical-align: middle;
+  transition: transform 0.15s ease-out;
+}
+
+.day-separator--collapsed::after {
+  transform: rotate(-90deg);
 }
 
 .note-card-wrapper {

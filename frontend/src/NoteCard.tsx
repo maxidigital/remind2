@@ -16,6 +16,8 @@ const GHOST_CLICK_GUARD_MS = 400
 
 interface Props {
   note: NoteEntry
+  expanded: boolean
+  onToggleExpand: () => void
   onArchive: (row: number) => void
   onDelete: (row: number) => void
   onEdit: (row: number, text: string) => void
@@ -28,8 +30,7 @@ interface DragState {
   dragging: boolean
 }
 
-export default function NoteCard({ note, onArchive, onDelete, onEdit, onColorChange }: Props) {
-  const [expanded, setExpanded] = useState(false)
+export default function NoteCard({ note, expanded, onToggleExpand, onArchive, onDelete, onEdit, onColorChange }: Props) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(note.text)
   const [offset, setOffset] = useState(0)
@@ -125,7 +126,7 @@ export default function NoteCard({ note, onArchive, onDelete, onEdit, onColorCha
     } else if (offset !== 0) {
       setOffset(0)
     } else {
-      setExpanded((v) => !v)
+      onToggleExpand()
     }
     dragRef.current = null
   }
