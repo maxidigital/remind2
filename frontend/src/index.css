@@ -152,7 +152,10 @@ body {
   background: var(--elevated);
   border: 1px solid var(--border);
   border-radius: 12px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--brand-primary) 45%, transparent),
+    0 0 20px 2px color-mix(in srgb, var(--brand-primary) 35%, transparent),
+    0 6px 20px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   z-index: 10;
 }
@@ -348,6 +351,8 @@ body {
   padding: 0.4rem;
   border-radius: 16px;
   box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--brand-primary) 45%, transparent),
+    0 0 20px 2px color-mix(in srgb, var(--brand-primary) 35%, transparent),
     0 16px 40px rgba(0, 0, 0, 0.22),
     0 2px 8px rgba(0, 0, 0, 0.12);
   transform-origin: top center;
@@ -447,7 +452,10 @@ body {
   padding: 1.25rem;
   max-width: 320px;
   width: 100%;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--brand-primary) 45%, transparent),
+    0 0 24px 3px color-mix(in srgb, var(--brand-primary) 35%, transparent),
+    0 10px 30px rgba(0, 0, 0, 0.25);
 }
 
 .confirm-dialog p {
