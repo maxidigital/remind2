@@ -465,6 +465,12 @@ body {
 .about-version {
   color: var(--text-muted);
   font-size: 0.8rem;
+  margin-bottom: 0.25rem;
+}
+
+.about-email {
+  color: var(--text-muted);
+  font-size: 0.8rem;
   margin-bottom: 1.25rem;
 }
 

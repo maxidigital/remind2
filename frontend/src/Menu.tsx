@@ -5,6 +5,7 @@ import { fetchSpreadsheetUrl } from './api'
 type Theme = 'light' | 'dark'
 
 interface Props {
+  email: string
   onLogout: () => void
 }
 
@@ -16,7 +17,7 @@ function getInitialTheme(): Theme {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
-export default function Menu({ onLogout }: Props) {
+export default function Menu({ email, onLogout }: Props) {
   const [open, setOpen] = useState(false)
   const [aboutOpen, setAboutOpen] = useState(false)
   const [theme, setTheme] = useState<Theme>(getInitialTheme)
@@ -78,7 +79,7 @@ export default function Menu({ onLogout }: Props) {
           </button>
         </div>
       )}
-      {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} />}
+      {aboutOpen && <AboutDialog email={email} onClose={() => setAboutOpen(false)} />}
     </div>
   )
 }

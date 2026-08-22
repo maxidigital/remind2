@@ -27,7 +27,7 @@ export default function Home({ email, onLoggedOut }: Props) {
           <img className="header-icon" src="/remind_circle.png" alt="" />
           <img className="header-logo" src="/remind.png" alt="re.mind2" />
         </div>
-        <Menu onLogout={handleLogout} />
+        <Menu email={email} onLogout={handleLogout} />
       </header>
 
       <main className="notes-area">
