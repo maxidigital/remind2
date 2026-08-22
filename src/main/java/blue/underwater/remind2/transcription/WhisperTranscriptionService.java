@@ -27,12 +27,18 @@ public class WhisperTranscriptionService {
     // Whisper alucina frases (típicamente outros de YouTube: "gracias por ver",
     // "suscribite al canal", a veces en otros idiomas) cuando el audio es
     // silencio o ruido sin voz. verbose_json expone, por segmento, no_speech_prob
-    // (confianza de que NO hay voz) y average_logprob (confianza de la
-    // transcripción en sí); un segmento con ambos indicadores en contra es texto
-    // inventado, no una transcripción real. Umbrales estándar de la comunidad de
-    // Whisper para este filtro.
-    private static final double NO_SPEECH_THRESHOLD = 0.6;
+    // (confianza de que NO hay voz), average_logprob (confianza de la
+    // transcripción en sí) y compression_ratio (qué tan repetitivo es el texto:
+    // alucinaciones tipo "gracias, gracias, gracias..." lo disparan). Mismos tres
+    // umbrales que usa el propio whisper.py de OpenAI para decidir si un segmento
+    // falló. Ninguna combinación de umbrales atrapa el 100% de los casos — una
+    // frase-plantilla dicha con confianza sobre ruido ambiente puede tener
+    // no_speech_prob bajo Y avg_logprob alto y aun así ser inventada; si esto
+    // sigue pasando seguido, la mitigación más robusta es filtrar silencio en el
+    // cliente (energía de audio) ANTES de llamar a Whisper.
+    private static final double NO_SPEECH_THRESHOLD = 0.5;
     private static final double LOG_PROB_THRESHOLD = -1.0;
+    private static final double COMPRESSION_RATIO_THRESHOLD = 2.4;
 
     private final OpenAiService service;
 
@@ -72,8 +78,13 @@ public class WhisperTranscriptionService {
     private static boolean isLikelyHallucinated(TranscriptionSegment segment) {
         Double noSpeechProb = segment.getNoSpeechProb();
         Double avgLogProb = segment.getAverageLogProb();
-        return noSpeechProb != null && noSpeechProb > NO_SPEECH_THRESHOLD
+        Double compressionRatio = segment.getCompressionRatio();
+
+        boolean silentAndUnconfident = noSpeechProb != null && noSpeechProb > NO_SPEECH_THRESHOLD
                 && avgLogProb != null && avgLogProb < LOG_PROB_THRESHOLD;
+        boolean repetitiveGibberish = compressionRatio != null && compressionRatio > COMPRESSION_RATIO_THRESHOLD;
+
+        return silentAndUnconfident || repetitiveGibberish;
     }
 
     private static String extensionOf(String originalFilename) {
