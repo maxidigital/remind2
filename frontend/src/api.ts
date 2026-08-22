@@ -33,6 +33,15 @@ export async function fetchNotes(): Promise<NoteEntry[]> {
   return data.notes
 }
 
+export async function fetchSpreadsheetUrl(): Promise<string> {
+  const res = await fetch('/api/notes/spreadsheet')
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`)
+  }
+  const data = await res.json()
+  return data.url
+}
+
 export class SaveNoteError extends Error {
   readonly status?: number // undefined => network failure (fetch rejected)
   readonly code?: string // backend's {"error": "..."} value, if any

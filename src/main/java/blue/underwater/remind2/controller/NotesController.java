@@ -96,8 +96,30 @@ public class NotesController {
             throw new UpstreamServiceException("SHEETS_FAILED", e);
         }
 
-        String spreadsheetUrl = "https://docs.google.com/spreadsheets/d/" + spreadsheetId;
-        return Map.of("text", text, "spreadsheetUrl", spreadsheetUrl);
+        return Map.of("text", text, "spreadsheetUrl", buildSpreadsheetUrl(spreadsheetId));
+    }
+
+    @GetMapping("/spreadsheet")
+    public Map<String, String> getSpreadsheet(@CookieValue(name = SessionCookie.COOKIE_NAME, required = false) String authCookie,
+                                               HttpServletResponse response) throws IOException, GeneralSecurityException {
+        AuthenticatedUser user = requireUser(authCookie, response);
+        if (user == null) {
+            return null;
+        }
+
+        String spreadsheetId;
+        try {
+            spreadsheetId = spreadsheetService.getOrCreateSpreadsheetId(user.userId(), user.credential());
+        } catch (Exception e) {
+            log.error("Getting spreadsheet failed for user {}: {}", user.userId(), e.toString(), e);
+            throw new UpstreamServiceException("SHEETS_FAILED", e);
+        }
+
+        return Map.of("url", buildSpreadsheetUrl(spreadsheetId));
+    }
+
+    private String buildSpreadsheetUrl(String spreadsheetId) {
+        return "https://docs.google.com/spreadsheets/d/" + spreadsheetId;
     }
 
     @PutMapping("/{row}")

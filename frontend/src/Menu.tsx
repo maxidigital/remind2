@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import AboutDialog from './AboutDialog'
+import { fetchSpreadsheetUrl } from './api'
 
 type Theme = 'light' | 'dark'
 
@@ -26,6 +27,16 @@ export default function Menu({ onLogout }: Props) {
     localStorage.setItem('re.mind2.theme', theme)
   }, [theme])
 
+  async function handleOpenSpreadsheet() {
+    setOpen(false)
+    try {
+      const url = await fetchSpreadsheetUrl()
+      window.open(url, '_blank', 'noopener')
+    } catch {
+      // ignore — same silent-fail pattern as copy/share in NoteCard
+    }
+  }
+
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -48,6 +59,9 @@ export default function Menu({ onLogout }: Props) {
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           >
             {theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+          </button>
+          <button className="menu-item" onClick={handleOpenSpreadsheet}>
+            Ver planilla
           </button>
           <button className="menu-item menu-item--danger" onClick={onLogout}>
             Salir
