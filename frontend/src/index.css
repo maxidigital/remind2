@@ -199,10 +199,6 @@ body {
   cursor: pointer;
 }
 
-.note-action--edit {
-  background: #64748b;
-}
-
 .note-action--archive {
   background: #f59e0b;
 }

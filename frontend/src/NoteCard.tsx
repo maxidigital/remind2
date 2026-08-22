@@ -3,7 +3,7 @@ import type { NoteEntry } from './api'
 import ConfirmDialog from './ConfirmDialog'
 
 const RIGHT_SWIPE_THRESHOLD = 160 // swipe right abre el menú contextual (Compartir/Editar/Copiar)
-const RIGHT_ACTIONS_WIDTH = 240 // swipe left reveals: Editar, Archivar, Eliminar
+const RIGHT_ACTIONS_WIDTH = 160 // swipe left reveals: Archivar, Eliminar
 const LONG_PRESS_MS = 500
 const LONG_PRESS_MOVE_TOLERANCE = 12 // temblor natural del dedo al mantener presionado; más laxo que el umbral de swipe
 const MENU_WIDTH = 208
@@ -201,9 +201,6 @@ export default function NoteCard({ note, onArchive, onDelete, onEdit, onColorCha
     <li className="note-card-wrapper" ref={wrapperRef}>
       {offset < 0 && (
         <div className="note-card-actions note-card-actions--right">
-          <button className="note-action note-action--edit" onClick={startEdit}>
-            Editar
-          </button>
           <button
             className="note-action note-action--archive"
             onClick={() => {
