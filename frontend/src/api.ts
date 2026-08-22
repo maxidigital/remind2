@@ -32,14 +32,42 @@ export async function fetchNotes(): Promise<NoteEntry[]> {
   return data.notes
 }
 
+export class SaveNoteError extends Error {
+  readonly status?: number // undefined => network failure (fetch rejected)
+  readonly code?: string // backend's {"error": "..."} value, if any
+  readonly retryable: boolean
+
+  constructor(message: string, opts: { status?: number; code?: string; retryable: boolean }) {
+    super(message)
+    this.name = 'SaveNoteError'
+    this.status = opts.status
+    this.code = opts.code
+    this.retryable = opts.retryable
+  }
+}
+
 export async function saveNote(blob: Blob, filename: string): Promise<SaveNoteResponse> {
   const formData = new FormData()
   formData.append('audio', blob, filename)
 
-  const res = await fetch('/api/notes', { method: 'POST', body: formData })
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`)
+  let res: Response
+  try {
+    res = await fetch('/api/notes', { method: 'POST', body: formData })
+  } catch {
+    throw new SaveNoteError('network', { retryable: true })
   }
+
+  if (!res.ok) {
+    let code: string | undefined
+    try {
+      const body = await res.json()
+      if (typeof body?.error === 'string') code = body.error
+    } catch {
+      // no/invalid JSON body — leave code undefined
+    }
+    throw new SaveNoteError(`HTTP ${res.status}`, { status: res.status, code, retryable: res.status >= 500 })
+  }
+
   return res.json()
 }
 

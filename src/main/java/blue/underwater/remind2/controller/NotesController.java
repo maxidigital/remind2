@@ -2,11 +2,14 @@ package blue.underwater.remind2.controller;
 
 import blue.underwater.remind2.auth.SessionCookie;
 import blue.underwater.remind2.auth.UserCredentialsStore;
+import blue.underwater.remind2.exception.UpstreamServiceException;
 import blue.underwater.remind2.sheets.NotesSheetService;
 import blue.underwater.remind2.sheets.UserSpreadsheetService;
 import blue.underwater.remind2.transcription.WhisperTranscriptionService;
 import com.google.api.client.auth.oauth2.Credential;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,6 +30,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/notes")
 public class NotesController {
+
+    private static final Logger log = LoggerFactory.getLogger(NotesController.class);
 
     private final SessionCookie sessionCookie;
     private final UserCredentialsStore credentialsStore;
@@ -74,9 +79,22 @@ public class NotesController {
             return null;
         }
 
-        String text = transcriptionService.transcribe(audio);
-        String spreadsheetId = spreadsheetService.getOrCreateSpreadsheetId(user.userId(), user.credential());
-        sheetService.append(spreadsheetId, user.credential(), text);
+        String text;
+        try {
+            text = transcriptionService.transcribe(audio);
+        } catch (Exception e) {
+            log.error("Transcription failed for user {}: {}", user.userId(), e.toString(), e);
+            throw new UpstreamServiceException("TRANSCRIPTION_FAILED", e);
+        }
+
+        String spreadsheetId;
+        try {
+            spreadsheetId = spreadsheetService.getOrCreateSpreadsheetId(user.userId(), user.credential());
+            sheetService.append(spreadsheetId, user.credential(), text);
+        } catch (Exception e) {
+            log.error("Saving note to spreadsheet failed for user {}: {}", user.userId(), e.toString(), e);
+            throw new UpstreamServiceException("SHEETS_FAILED", e);
+        }
 
         String spreadsheetUrl = "https://docs.google.com/spreadsheets/d/" + spreadsheetId;
         return Map.of("text", text, "spreadsheetUrl", spreadsheetUrl);

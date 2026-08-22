@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { logout } from './api'
 import Recorder from './Recorder'
 import NotesList from './NotesList'
 import Menu from './Menu'
+import { startAutoRetry } from './offlineQueue'
 
 interface Props {
   email: string
@@ -11,6 +12,8 @@ interface Props {
 
 export default function Home({ email, onLoggedOut }: Props) {
   const [refreshKey, setRefreshKey] = useState(0)
+
+  useEffect(() => startAutoRetry(), [])
 
   async function handleLogout() {
     await logout()

@@ -304,6 +304,135 @@ body {
   color: white;
 }
 
+.note-context-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+}
+
+.note-context-menu {
+  position: fixed;
+  top: auto;
+  right: auto;
+  z-index: 21;
+}
+
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 30;
+}
+
+.confirm-dialog {
+  background: var(--card-bg);
+  border-radius: 14px;
+  padding: 1.25rem;
+  max-width: 320px;
+  width: 100%;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.confirm-dialog p {
+  margin: 0 0 1rem;
+  color: var(--text);
+}
+
+.confirm-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.confirm-cancel,
+.confirm-danger {
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.confirm-cancel {
+  background: var(--border);
+  color: var(--text);
+}
+
+.confirm-danger {
+  background: var(--accent-recording);
+  color: white;
+}
+
+.pending-card {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border-style: dashed;
+  opacity: 0.85;
+  cursor: default;
+}
+
+.pending-wave {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.pending-row:not(.pending-row--blocked) .pending-wave rect {
+  animation: pending-wave-pulse 1.2s ease-in-out infinite;
+}
+
+.pending-row:not(.pending-row--blocked) .pending-wave rect:nth-child(2n) {
+  animation-delay: 0.2s;
+}
+
+@keyframes pending-wave-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.pending-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  flex: 1;
+}
+
+.pending-row--blocked .pending-label {
+  color: var(--accent-recording);
+}
+
+.pending-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.pending-actions button {
+  border: none;
+  border-radius: 8px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.pending-actions button:first-child {
+  background: var(--accent);
+  color: white;
+}
+
+.pending-actions button:last-child {
+  background: var(--border);
+  color: var(--text);
+}
+
 .recorder {
   position: fixed;
   bottom: 0;

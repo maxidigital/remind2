@@ -1,5 +1,6 @@
-import { useRef, useState } from 'react'
-import { saveNote } from './api'
+import { useEffect, useRef, useState } from 'react'
+import { saveNote, SaveNoteError } from './api'
+import { enqueue, removeItem, markBlocked } from './offlineQueue'
 
 type Status = 'idle' | 'recording' | 'saving' | 'error'
 
@@ -31,6 +32,35 @@ export default function Recorder({ onSaved }: Props) {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const streamRef = useRef<MediaStream | null>(null)
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null)
+
+  async function acquireWakeLock() {
+    if (!('wakeLock' in navigator)) return
+    try {
+      wakeLockRef.current = await navigator.wakeLock.request('screen')
+    } catch {
+      // el navegador puede rechazar el pedido (pestaña oculta, batería baja, etc.); no es fatal
+    }
+  }
+
+  async function releaseWakeLock() {
+    try {
+      await wakeLockRef.current?.release()
+    } catch {
+      // ya liberado o no soportado
+    }
+    wakeLockRef.current = null
+  }
+
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible' && status === 'recording') {
+        acquireWakeLock()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [status])
 
   async function start() {
     setError(null)
@@ -58,6 +88,7 @@ export default function Recorder({ onSaved }: Props) {
     mediaRecorderRef.current = recorder
     recorder.start()
     setStatus('recording')
+    acquireWakeLock()
   }
 
   function stop() {
@@ -66,18 +97,52 @@ export default function Recorder({ onSaved }: Props) {
 
   async function handleStop(mimeType: string) {
     streamRef.current?.getTracks().forEach((track) => track.stop())
+    releaseWakeLock()
     setStatus('saving')
 
     const effectiveType = mimeType || 'audio/webm'
     const blob = new Blob(chunksRef.current, { type: effectiveType })
     const ext = extensionFor(effectiveType)
+    const filename = `recording.${ext}`
+
+    // Se persiste en IndexedDB ANTES de intentar la red, para que una falla dura
+    // a mitad de subida (o cerrar la pestaña) nunca pierda la grabación.
+    let queueId: string | null = null
+    try {
+      queueId = await enqueue(blob, filename)
+    } catch {
+      // IndexedDB no disponible (navegación privada, cuota, etc.) — degrada a
+      // envío directo best-effort en vez de bloquear la grabación.
+    }
 
     try {
-      await saveNote(blob, `recording.${ext}`)
+      await saveNote(blob, filename)
+      if (queueId) await removeItem(queueId)
       onSaved()
       setStatus('idle')
-    } catch {
-      setError('No se pudo guardar la nota')
+    } catch (err) {
+      if (err instanceof SaveNoteError && err.retryable) {
+        // Queda en la cola ('pending'); el loop de reintento (evento online /
+        // intervalo de 30s / próxima apertura de la app) la va a recoger.
+        setStatus('idle')
+        return
+      }
+
+      if (err instanceof SaveNoteError && err.status === 413) {
+        if (queueId) await markBlocked(queueId, 'TOO_LARGE')
+        setError('La nota es muy larga para subirla. Grabá una más corta.')
+        setStatus('error')
+        return
+      }
+
+      if (err instanceof SaveNoteError && err.status === 401) {
+        if (queueId) await markBlocked(queueId, 'AUTH_EXPIRED')
+        setError('Tu sesión expiró. Volvé a iniciar sesión.')
+        setStatus('error')
+        return
+      }
+
+      setError('No se pudo guardar la nota. Se reintentará más tarde.')
       setStatus('error')
     }
   }
