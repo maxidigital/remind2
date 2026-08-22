@@ -22,7 +22,6 @@ interface Props {
   onDelete: (row: number) => void
   onEdit: (row: number, text: string) => void
   onColorChange: (row: number, color: string) => void
-  style?: React.CSSProperties
 }
 
 interface DragState {
@@ -31,7 +30,7 @@ interface DragState {
   dragging: boolean
 }
 
-export default function NoteCard({ note, expanded, onToggleExpand, onArchive, onDelete, onEdit, onColorChange, style }: Props) {
+export default function NoteCard({ note, expanded, onToggleExpand, onArchive, onDelete, onEdit, onColorChange }: Props) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(note.text)
   const [offset, setOffset] = useState(0)
@@ -178,7 +177,7 @@ export default function NoteCard({ note, expanded, onToggleExpand, onArchive, on
   }
 
   return (
-    <li className="note-card-wrapper" ref={wrapperRef} style={style}>
+    <li className="note-card-wrapper" ref={wrapperRef}>
       {offset < 0 && (
         <div className="note-card-actions note-card-actions--right">
           <button

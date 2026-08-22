@@ -37,13 +37,6 @@ type MergedItem =
   | { kind: 'note'; date: string; note: NoteEntry }
   | { kind: 'pending'; date: string; item: QueueItem }
 
-const FADE_STEP = 0.12 // cuánto baja la opacidad por cada nota más vieja
-const FADE_MIN_OPACITY = 0.4
-
-function fadeOpacity(index: number): number {
-  return Math.max(FADE_MIN_OPACITY, 1 - index * FADE_STEP)
-}
-
 export default function NotesList({ refreshKey }: Props) {
   const [notes, setNotes] = useState<NoteEntry[] | null>(null)
   const [expandedRow, setExpandedRow] = useState<number | null>(null)
@@ -147,10 +140,9 @@ export default function NotesList({ refreshKey }: Props) {
                   onDelete={handleDelete}
                   onEdit={handleEdit}
                   onColorChange={handleColorChange}
-                  style={{ opacity: entry.note.row === expandedRow ? 1 : fadeOpacity(i) }}
                 />
               ) : (
-                <PendingNoteRow item={entry.item} onRetry={retryItem} onDiscard={discardItem} style={{ opacity: fadeOpacity(i) }} />
+                <PendingNoteRow item={entry.item} onRetry={retryItem} onDiscard={discardItem} />
               ))}
           </Fragment>
         )
