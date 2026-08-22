@@ -193,10 +193,7 @@ export default function Recorder({ onSaved }: Props) {
         </button>
         <span className="recorder-timer">{status === 'recording' && formatDuration(elapsedSeconds)}</span>
       </div>
-      <span className="recorder-label">
-        {status === 'saving' && 'Transcribiendo…'}
-        {status === 'error' && 'Tocá para reintentar'}
-      </span>
+      <span className="recorder-label">{status === 'error' && 'Tocá para reintentar'}</span>
       {showEmpty && <EmptyRecordingDialog onClose={() => setShowEmpty(false)} />}
     </div>
   )
