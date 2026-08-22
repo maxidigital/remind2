@@ -5,6 +5,7 @@ import ConfirmDialog from './ConfirmDialog'
 const LEFT_ACTIONS_WIDTH = 160 // swipe right reveals: Copiar, Compartir
 const RIGHT_ACTIONS_WIDTH = 240 // swipe left reveals: Editar, Archivar, Eliminar
 const LONG_PRESS_MS = 500
+const LONG_PRESS_MOVE_TOLERANCE = 12 // temblor natural del dedo al mantener presionado; más laxo que el umbral de swipe
 const MENU_WIDTH = 190
 const MENU_HEIGHT = 150
 const GHOST_CLICK_GUARD_MS = 400
@@ -101,6 +102,11 @@ export default function NoteCard({ note, onArchive, onDelete, onEdit }: Props) {
     const delta = e.clientX - drag.startX
     if (!drag.dragging && Math.abs(delta) > 6) {
       drag.dragging = true
+    }
+    // El long-press se cancela con un margen más generoso que el del swipe:
+    // mantener el dedo quieto tiembla unos pocos píxeles y no debería bastar
+    // para tirar abajo el menú contextual antes de que se cumplan los 500ms.
+    if (longPressTimer.current !== null && Math.abs(delta) > LONG_PRESS_MOVE_TOLERANCE) {
       clearLongPressTimer()
     }
     if (!drag.dragging) return
