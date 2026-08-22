@@ -1,19 +1,38 @@
 :root {
-  --accent: #4f46e5;
-  --accent-recording: #ef4444;
-  --bg: #f7f7fb;
-  --card-bg: #ffffff;
-  --text: #1a1a2e;
-  --text-muted: #6b7280;
-  --border: #e5e7eb;
+  /* superficies */
+  --bg: #09090b;
+  --card-bg: #141318; /* surface */
+  --elevated: #1d1a22; /* elevated surface: dropdowns, context menu, dialogs */
+
+  /* texto */
+  --text: #f5f3f7;
+  --text-muted: #a6a1ad;
+
+  --border: #2b2733;
+
+  /* marca */
+  --brand-primary: #8b5cf6;
+  --brand-accent: #ec4899;
+
+  /* status */
+  --status-pending: #f5d90a;
+  --danger: #ef4444;
 }
 
-[data-theme="dark"] {
-  --bg: #101014;
-  --card-bg: #1c1c24;
-  --text: #f1f1f5;
-  --text-muted: #9aa0ac;
-  --border: #2c2c36;
+[data-theme="light"] {
+  --bg: #f2f0f5;
+  --card-bg: #fbfafd;
+  --elevated: #ffffff;
+
+  --text: #17151d;
+  --text-muted: #6b6572;
+
+  --border: #e4e1ea;
+
+  --brand-primary: #6d28d9;
+  --brand-accent: #a21caf;
+
+  --status-pending: #a16207;
 }
 
 * {
@@ -68,7 +87,7 @@ body {
 }
 
 .btn-primary {
-  background: var(--accent);
+  background: var(--brand-primary);
   color: white;
 }
 
@@ -114,7 +133,7 @@ body {
   top: calc(100% + 0.25rem);
   right: 0;
   min-width: 180px;
-  background: var(--card-bg);
+  background: var(--elevated);
   border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
@@ -139,7 +158,7 @@ body {
 }
 
 .menu-item--danger {
-  color: var(--accent-recording);
+  color: var(--danger);
 }
 
 .notes-area {
@@ -204,7 +223,7 @@ body {
 }
 
 .note-action--delete {
-  background: var(--accent-recording);
+  background: var(--danger);
 }
 
 .note-card {
@@ -284,7 +303,7 @@ body {
 }
 
 .note-edit-save {
-  background: var(--accent);
+  background: var(--brand-primary);
   color: white;
 }
 
@@ -335,7 +354,7 @@ body {
 }
 
 .note-context-menu .menu-item--share svg {
-  color: var(--accent);
+  color: var(--brand-primary);
 }
 
 .note-context-menu .menu-item--edit svg {
@@ -375,13 +394,14 @@ body {
 }
 
 .menu-color-swatch--active {
-  border-color: var(--text);
+  border-color: var(--brand-accent);
+  border-width: 3px;
 }
 
 .menu-color-swatch--none {
   background:
-    linear-gradient(to top right, transparent calc(50% - 1px), var(--accent-recording) calc(50% - 1px), var(--accent-recording) calc(50% + 1px), transparent calc(50% + 1px)),
-    var(--card-bg);
+    linear-gradient(to top right, transparent calc(50% - 1px), var(--danger) calc(50% - 1px), var(--danger) calc(50% + 1px), transparent calc(50% + 1px)),
+    var(--elevated);
 }
 
 .confirm-backdrop {
@@ -396,7 +416,7 @@ body {
 }
 
 .confirm-dialog {
-  background: var(--card-bg);
+  background: var(--elevated);
   border-radius: 14px;
   padding: 1.25rem;
   max-width: 320px;
@@ -430,7 +450,7 @@ body {
 }
 
 .confirm-danger {
-  background: var(--accent-recording);
+  background: var(--danger);
   color: white;
 }
 
@@ -444,8 +464,12 @@ body {
 }
 
 .pending-wave {
-  color: var(--text-muted);
+  color: var(--status-pending);
   flex-shrink: 0;
+}
+
+.pending-row--blocked .pending-wave {
+  color: var(--danger);
 }
 
 .pending-row:not(.pending-row--blocked) .pending-wave rect {
@@ -473,7 +497,7 @@ body {
 }
 
 .pending-row--blocked .pending-label {
-  color: var(--accent-recording);
+  color: var(--danger);
 }
 
 .pending-actions {
@@ -491,7 +515,7 @@ body {
 }
 
 .pending-actions button:first-child {
-  background: var(--accent);
+  background: var(--brand-primary);
   color: white;
 }
 
@@ -518,12 +542,12 @@ body {
   height: 72px;
   border-radius: 50%;
   border: none;
-  background: var(--accent);
+  background: var(--brand-primary);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--brand-primary) 35%, transparent);
   cursor: pointer;
   transition: background 0.2s, transform 0.15s;
 }
@@ -533,7 +557,7 @@ body {
 }
 
 .record-button--recording {
-  background: var(--accent-recording);
+  background: var(--danger);
   box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
   animation: pulse 1.4s ease-in-out infinite;
 }
@@ -559,7 +583,7 @@ body {
 }
 
 .recorder-error {
-  color: var(--accent-recording);
+  color: var(--danger);
   font-size: 0.85rem;
   margin: 0;
 }

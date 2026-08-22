@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { NoteEntry } from './api'
 import ConfirmDialog from './ConfirmDialog'
+import { NOTE_COLORS } from './colors'
 
 const RIGHT_SWIPE_THRESHOLD = 160 // swipe right abre el menú contextual (Compartir/Editar/Copiar)
 const RIGHT_ACTIONS_WIDTH = 160 // swipe left reveals: Archivar, Eliminar
@@ -11,18 +12,6 @@ const MENU_HEIGHT = 290
 const MENU_MARGIN = 12
 const MENU_GAP_FROM_TOUCH = 16
 const GHOST_CLICK_GUARD_MS = 400
-
-const NOTE_COLORS = [
-  '#ef4444', // rojo
-  '#f97316', // naranja
-  '#f59e0b', // ámbar
-  '#22c55e', // verde
-  '#14b8a6', // verde azulado
-  '#0ea5e9', // celeste
-  '#3b82f6', // azul
-  '#8b5cf6', // violeta
-  '#ec4899', // rosa
-]
 
 function formatTime(raw: string): string {
   const date = new Date(raw)
@@ -322,15 +311,15 @@ export default function NoteCard({ note, onArchive, onDelete, onEdit, onColorCha
                   setMenuPos(null)
                 }}
               />
-              {NOTE_COLORS.map((color) => (
+              {NOTE_COLORS.map(({ name, value }) => (
                 <button
-                  key={color}
-                  className={`menu-color-swatch${note.color === color ? ' menu-color-swatch--active' : ''}`}
-                  style={{ background: color }}
-                  aria-label={`Color ${color}`}
+                  key={value}
+                  className={`menu-color-swatch${note.color === value ? ' menu-color-swatch--active' : ''}`}
+                  style={{ background: value }}
+                  aria-label={`Color ${name}`}
                   onClick={() => {
                     if (isGhostClick()) return
-                    onColorChange(note.row, color)
+                    onColorChange(note.row, value)
                     setMenuPos(null)
                   }}
                 />
