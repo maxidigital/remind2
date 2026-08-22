@@ -208,20 +208,9 @@ body {
   font-weight: 600;
   border-radius: 999px;
   cursor: pointer;
-}
-
-.day-separator::after {
-  content: '';
-  display: inline-block;
-  margin-left: 0.35rem;
-  border: 4px solid transparent;
-  border-top-color: currentColor;
-  vertical-align: middle;
-  transition: transform 0.15s ease-out;
-}
-
-.day-separator--collapsed::after {
-  transform: rotate(-90deg);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--brand-primary) 50%, transparent),
+    0 0 12px 1px color-mix(in srgb, var(--brand-primary) 45%, transparent);
 }
 
 .note-card-wrapper {
@@ -605,7 +594,10 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--brand-primary) 35%, transparent);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--brand-primary) 65%, transparent),
+    0 0 22px 4px color-mix(in srgb, var(--brand-primary) 55%, transparent),
+    0 4px 14px color-mix(in srgb, var(--brand-primary) 35%, transparent);
   cursor: pointer;
   transition: background 0.2s, transform 0.15s;
 }
