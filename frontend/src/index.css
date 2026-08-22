@@ -600,7 +600,7 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-  padding: 1.25rem 0 calc(1.5rem + env(safe-area-inset-bottom));
+  padding: 1.25rem 0 calc(0.4rem + env(safe-area-inset-bottom));
   background: linear-gradient(to top, var(--bg) 60%, transparent);
 }
 
