@@ -8,9 +8,9 @@ const RIGHT_SWIPE_THRESHOLD = 160 // swipe right abre el menú contextual (Compa
 const RIGHT_ACTIONS_WIDTH = 160 // swipe left reveals: Archivar, Eliminar
 const LONG_PRESS_MS = 500
 const LONG_PRESS_MOVE_TOLERANCE = 12 // temblor natural del dedo al mantener presionado; más laxo que el umbral de swipe
-const MENU_WIDTH = 208
-const MENU_HEIGHT = 290
-const MENU_MARGIN = 28
+const MENU_WIDTH = 180
+const MENU_HEIGHT = 320
+const MENU_MARGIN = 32
 const MENU_GAP_FROM_TOUCH = 16
 const GHOST_CLICK_GUARD_MS = 400
 
