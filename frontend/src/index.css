@@ -190,10 +190,6 @@ body {
   right: 0;
 }
 
-.note-card-actions--left {
-  left: 0;
-}
-
 .note-action {
   width: 80px;
   border: none;
@@ -201,14 +197,6 @@ body {
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
-}
-
-.note-action--copy {
-  background: #10b981;
-}
-
-.note-action--share {
-  background: var(--accent);
 }
 
 .note-action--edit {

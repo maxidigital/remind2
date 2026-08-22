@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { NoteEntry } from './api'
 import ConfirmDialog from './ConfirmDialog'
 
-const LEFT_ACTIONS_WIDTH = 160 // swipe right reveals: Copiar, Compartir
+const RIGHT_SWIPE_THRESHOLD = 160 // swipe right abre el menú contextual (Compartir/Editar/Copiar)
 const RIGHT_ACTIONS_WIDTH = 240 // swipe left reveals: Editar, Archivar, Eliminar
 const LONG_PRESS_MS = 500
 const LONG_PRESS_MOVE_TOLERANCE = 12 // temblor natural del dedo al mantener presionado; más laxo que el umbral de swipe
@@ -40,7 +40,6 @@ export default function NoteCard({ note, onArchive, onDelete, onEdit }: Props) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(note.text)
   const [offset, setOffset] = useState(0)
-  const [copied, setCopied] = useState(false)
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null)
   const [confirmAction, setConfirmAction] = useState<'archive' | 'delete' | null>(null)
   const dragRef = useRef<DragState | null>(null)
@@ -111,20 +110,23 @@ export default function NoteCard({ note, onArchive, onDelete, onEdit }: Props) {
     }
     if (!drag.dragging) return
 
-    setOffset(Math.min(LEFT_ACTIONS_WIDTH, Math.max(-RIGHT_ACTIONS_WIDTH, drag.startOffset + delta)))
+    setOffset(Math.min(RIGHT_SWIPE_THRESHOLD, Math.max(-RIGHT_ACTIONS_WIDTH, drag.startOffset + delta)))
   }
 
-  function handlePointerUp() {
+  function handlePointerUp(e: React.PointerEvent<HTMLDivElement>) {
     clearLongPressTimer()
     const drag = dragRef.current
     if (!drag) return
 
     if (drag.dragging) {
-      setOffset((current) => {
-        if (current > LEFT_ACTIONS_WIDTH / 2) return LEFT_ACTIONS_WIDTH
-        if (current < -RIGHT_ACTIONS_WIDTH / 2) return -RIGHT_ACTIONS_WIDTH
-        return 0
-      })
+      if (offset > RIGHT_SWIPE_THRESHOLD / 2) {
+        openMenuAt(e.clientX, e.clientY)
+        setOffset(0)
+      } else if (offset < -RIGHT_ACTIONS_WIDTH / 2) {
+        setOffset(-RIGHT_ACTIONS_WIDTH)
+      } else {
+        setOffset(0)
+      }
     } else if (offset !== 0) {
       setOffset(0)
     } else {
@@ -141,14 +143,10 @@ export default function NoteCard({ note, onArchive, onDelete, onEdit }: Props) {
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(note.text)
-      setCopied(true)
-      setTimeout(() => {
-        setCopied(false)
-        setOffset(0)
-      }, 600)
     } catch {
-      setOffset(0)
+      // ignore
     }
+    setOffset(0)
   }
 
   async function handleShare() {
@@ -184,17 +182,6 @@ export default function NoteCard({ note, onArchive, onDelete, onEdit }: Props) {
 
   return (
     <li className="note-card-wrapper" ref={wrapperRef}>
-      {offset > 0 && (
-        <div className="note-card-actions note-card-actions--left">
-          <button className="note-action note-action--copy" onClick={handleCopy}>
-            {copied ? 'Copiado' : 'Copiar'}
-          </button>
-          <button className="note-action note-action--share" onClick={handleShare}>
-            Compartir
-          </button>
-        </div>
-      )}
-
       {offset < 0 && (
         <div className="note-card-actions note-card-actions--right">
           <button className="note-action note-action--edit" onClick={startEdit}>
