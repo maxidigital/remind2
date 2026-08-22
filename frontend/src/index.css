@@ -451,11 +451,6 @@ body {
   margin: 0.5rem 0 1.25rem;
 }
 
-.about-tagline {
-  color: var(--text-muted);
-  font-size: 0.9rem;
-}
-
 .about-version {
   color: var(--text-muted);
   font-size: 0.8rem;
