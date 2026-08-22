@@ -12,12 +12,13 @@ interface Props {
   item: QueueItem
   onRetry: (id: string) => void
   onDiscard: (id: string) => void
+  style?: React.CSSProperties
 }
 
-export default function PendingNoteRow({ item, onRetry, onDiscard }: Props) {
+export default function PendingNoteRow({ item, onRetry, onDiscard, style }: Props) {
   const blocked = item.status === 'blocked'
   return (
-    <li className={`note-card-wrapper pending-row${blocked ? ' pending-row--blocked' : ''}`}>
+    <li className={`note-card-wrapper pending-row${blocked ? ' pending-row--blocked' : ''}`} style={style}>
       <div className="note-card pending-card">
         <SoundWaveIcon />
         <span className="note-time">{formatTime(item.createdAt)}</span>

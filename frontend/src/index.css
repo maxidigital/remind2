@@ -225,6 +225,7 @@ body {
   position: relative;
   border-radius: 14px;
   overflow: hidden;
+  transition: opacity 0.2s ease-out;
 }
 
 .note-card-actions {
