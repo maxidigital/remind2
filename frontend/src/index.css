@@ -101,11 +101,16 @@ body {
 }
 
 .header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.25rem;
   padding-top: calc(1rem + env(safe-area-inset-top));
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
 }
 
 .header-brand {
@@ -589,7 +594,7 @@ body {
   height: 72px;
   border-radius: 50%;
   border: none;
-  background: var(--brand-primary);
+  background: var(--elevated);
   color: white;
   display: flex;
   align-items: center;
