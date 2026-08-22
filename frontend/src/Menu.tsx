@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import AboutDialog from './AboutDialog'
 
 type Theme = 'light' | 'dark'
 
@@ -16,6 +17,7 @@ function getInitialTheme(): Theme {
 
 export default function Menu({ onLogout }: Props) {
   const [open, setOpen] = useState(false)
+  const [aboutOpen, setAboutOpen] = useState(false)
   const [theme, setTheme] = useState<Theme>(getInitialTheme)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -50,8 +52,19 @@ export default function Menu({ onLogout }: Props) {
           <button className="menu-item menu-item--danger" onClick={onLogout}>
             Salir
           </button>
+          <div className="menu-divider" />
+          <button
+            className="menu-item"
+            onClick={() => {
+              setAboutOpen(true)
+              setOpen(false)
+            }}
+          >
+            Acerca de...
+          </button>
         </div>
       )}
+      {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} />}
     </div>
   )
 }
