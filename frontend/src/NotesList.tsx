@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState } from 'react'
-import { archiveNote, deleteNote, fetchNotes, updateNote, type NoteEntry } from './api'
+import { archiveNote, deleteNote, fetchNotes, updateNote, updateNoteColor, type NoteEntry } from './api'
 import { usePendingQueue, retryItem, discardItem, subscribe, type QueueItem } from './offlineQueue'
 import NoteCard from './NoteCard'
 import PendingNoteRow from './PendingNoteRow'
@@ -80,6 +80,15 @@ export default function NotesList({ refreshKey }: Props) {
     }
   }
 
+  async function handleColorChange(row: number, color: string) {
+    setNotes((prev) => (prev ? prev.map((n) => (n.row === row ? { ...n, color } : n)) : prev))
+    try {
+      await updateNoteColor(row, color)
+    } catch {
+      reload()
+    }
+  }
+
   if (notes === null) {
     return <p className="notes-status">Cargando notas…</p>
   }
@@ -102,7 +111,13 @@ export default function NotesList({ refreshKey }: Props) {
           <Fragment key={key}>
             {showSeparator && <li className="day-separator">{dayLabelOf(entry.date)}</li>}
             {entry.kind === 'note' ? (
-              <NoteCard note={entry.note} onArchive={handleArchive} onDelete={handleDelete} onEdit={handleEdit} />
+              <NoteCard
+                note={entry.note}
+                onArchive={handleArchive}
+                onDelete={handleDelete}
+                onEdit={handleEdit}
+                onColorChange={handleColorChange}
+              />
             ) : (
               <PendingNoteRow item={entry.item} onRetry={retryItem} onDiscard={discardItem} />
             )}

@@ -7,6 +7,7 @@ export interface NoteEntry {
   row: number
   date: string
   text: string
+  color: string
 }
 
 export interface SaveNoteResponse {
@@ -76,6 +77,17 @@ export async function updateNote(row: number, text: string): Promise<void> {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text }),
+  })
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`)
+  }
+}
+
+export async function updateNoteColor(row: number, color: string): Promise<void> {
+  const res = await fetch(`/api/notes/${row}/color`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ color }),
   })
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}`)

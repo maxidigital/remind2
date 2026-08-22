@@ -7,10 +7,22 @@ const RIGHT_ACTIONS_WIDTH = 240 // swipe left reveals: Editar, Archivar, Elimina
 const LONG_PRESS_MS = 500
 const LONG_PRESS_MOVE_TOLERANCE = 12 // temblor natural del dedo al mantener presionado; más laxo que el umbral de swipe
 const MENU_WIDTH = 208
-const MENU_HEIGHT = 190
+const MENU_HEIGHT = 290
 const MENU_MARGIN = 12
 const MENU_GAP_FROM_TOUCH = 16
 const GHOST_CLICK_GUARD_MS = 400
+
+const NOTE_COLORS = [
+  '#ef4444', // rojo
+  '#f97316', // naranja
+  '#f59e0b', // ámbar
+  '#22c55e', // verde
+  '#14b8a6', // verde azulado
+  '#0ea5e9', // celeste
+  '#3b82f6', // azul
+  '#8b5cf6', // violeta
+  '#ec4899', // rosa
+]
 
 function formatTime(raw: string): string {
   const date = new Date(raw)
@@ -29,6 +41,7 @@ interface Props {
   onArchive: (row: number) => void
   onDelete: (row: number) => void
   onEdit: (row: number, text: string) => void
+  onColorChange: (row: number, color: string) => void
 }
 
 interface DragState {
@@ -37,7 +50,7 @@ interface DragState {
   dragging: boolean
 }
 
-export default function NoteCard({ note, onArchive, onDelete, onEdit }: Props) {
+export default function NoteCard({ note, onArchive, onDelete, onEdit, onColorChange }: Props) {
   const [expanded, setExpanded] = useState(false)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(note.text)
@@ -217,6 +230,7 @@ export default function NoteCard({ note, onArchive, onDelete, onEdit }: Props) {
         style={{
           transform: `translateX(${offset}px)`,
           transition: dragRef.current?.dragging ? 'none' : 'transform 0.2s ease-out',
+          ...(note.color ? ({ '--note-accent': note.color } as React.CSSProperties) : {}),
         }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -298,6 +312,33 @@ export default function NoteCard({ note, onArchive, onDelete, onEdit }: Props) {
               <CopyIcon />
               Copiar
             </button>
+
+            <div className="menu-color-divider" />
+
+            <div className="menu-color-grid">
+              <button
+                className={`menu-color-swatch menu-color-swatch--none${!note.color ? ' menu-color-swatch--active' : ''}`}
+                aria-label="Sin color"
+                onClick={() => {
+                  if (isGhostClick()) return
+                  onColorChange(note.row, '')
+                  setMenuPos(null)
+                }}
+              />
+              {NOTE_COLORS.map((color) => (
+                <button
+                  key={color}
+                  className={`menu-color-swatch${note.color === color ? ' menu-color-swatch--active' : ''}`}
+                  style={{ background: color }}
+                  aria-label={`Color ${color}`}
+                  onClick={() => {
+                    if (isGhostClick()) return
+                    onColorChange(note.row, color)
+                    setMenuPos(null)
+                  }}
+                />
+              ))}
+            </div>
           </div>
         </>
       )}

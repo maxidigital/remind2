@@ -122,6 +122,24 @@ public class NotesController {
         sheetService.updateText(spreadsheetId, user.credential(), row, text);
     }
 
+    @PutMapping("/{row}/color")
+    public void updateColor(@PathVariable int row,
+                             @RequestBody Map<String, String> body,
+                             @CookieValue(name = SessionCookie.COOKIE_NAME, required = false) String authCookie,
+                             HttpServletResponse response) throws IOException, GeneralSecurityException {
+        AuthenticatedUser user = requireUser(authCookie, response);
+        if (user == null) {
+            return;
+        }
+        String color = body.getOrDefault("color", "");
+        String spreadsheetId = spreadsheetService.findSpreadsheetId(user.userId(), user.credential());
+        if (spreadsheetId == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        sheetService.updateColor(spreadsheetId, user.credential(), row, color);
+    }
+
     @PostMapping("/{row}/archive")
     public void archiveNote(@PathVariable int row,
                              @CookieValue(name = SessionCookie.COOKIE_NAME, required = false) String authCookie,

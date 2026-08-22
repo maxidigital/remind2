@@ -34,7 +34,7 @@ public class NotesSheetService {
     private static final String STATUS_ARCHIVED = "archived";
     private static final String STATUS_DELETED = "deleted";
 
-    public record NoteEntry(int row, String date, String text) {
+    public record NoteEntry(int row, String date, String text, String color) {
     }
 
     public void append(String spreadsheetId, Credential credential, String text)
@@ -58,7 +58,7 @@ public class NotesSheetService {
         Sheets sheets = buildSheetsClient(credential);
 
         ValueRange result = sheets.spreadsheets().values()
-                .get(spreadsheetId, "A:C")
+                .get(spreadsheetId, "A:D")
                 .execute();
 
         List<List<Object>> rows = result.getValues();
@@ -76,8 +76,9 @@ public class NotesSheetService {
 
             String date = row.size() > 0 ? String.valueOf(row.get(0)) : "";
             String text = row.size() > 1 ? String.valueOf(row.get(1)) : "";
+            String color = row.size() > 3 ? String.valueOf(row.get(3)) : "";
             int sheetRow = i + 1; // 1-indexed sheet row; header occupies row 1
-            entries.add(new NoteEntry(sheetRow, date, text));
+            entries.add(new NoteEntry(sheetRow, date, text, color));
         }
 
         Collections.reverse(entries);
@@ -91,6 +92,17 @@ public class NotesSheetService {
         ValueRange value = new ValueRange().setValues(List.of(List.of(text)));
         sheets.spreadsheets().values()
                 .update(spreadsheetId, "B" + row, value)
+                .setValueInputOption("RAW")
+                .execute();
+    }
+
+    public void updateColor(String spreadsheetId, Credential credential, int row, String color)
+            throws IOException, GeneralSecurityException {
+        Sheets sheets = buildSheetsClient(credential);
+
+        ValueRange value = new ValueRange().setValues(List.of(List.of(color)));
+        sheets.spreadsheets().values()
+                .update(spreadsheetId, "D" + row, value)
                 .setValueInputOption("RAW")
                 .execute();
     }
