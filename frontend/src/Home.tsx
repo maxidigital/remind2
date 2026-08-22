@@ -23,7 +23,9 @@ export default function Home({ email, onLoggedOut }: Props) {
   return (
     <div className="app">
       <header className="header">
-        <span className="header-email">{email}</span>
+        <span className="header-email" title={email}>
+          re.mind2
+        </span>
         <Menu onLogout={handleLogout} />
       </header>
 
