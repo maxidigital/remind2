@@ -110,7 +110,7 @@ body {
   padding: 1rem 1.25rem;
   padding-top: calc(1rem + env(safe-area-inset-top));
   background: var(--bg);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid color-mix(in srgb, var(--brand-primary) 22%, transparent);
 }
 
 .header-brand {
@@ -608,16 +608,16 @@ body {
 
 .recorder-listening {
   justify-self: end;
-  padding-right: 0.75rem;
+  padding-right: 1.75rem;
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: 1rem;
 }
 
 .recorder-timer {
   justify-self: start;
-  padding-left: 0.75rem;
+  padding-left: 1.75rem;
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: 1rem;
   font-variant-numeric: tabular-nums;
 }
 
@@ -644,9 +644,7 @@ body {
 }
 
 .record-button--recording {
-  background: var(--danger);
-  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
-  animation: pulse 1.4s ease-in-out infinite;
+  animation: pulse 1.2s ease-in-out infinite;
 }
 
 .record-button--saving {
@@ -657,10 +655,18 @@ body {
 @keyframes pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.45);
+    transform: scale(1);
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--danger) 70%, transparent),
+      0 0 24px 4px color-mix(in srgb, var(--danger) 60%, transparent),
+      0 0 0 0 color-mix(in srgb, var(--danger) 55%, transparent);
   }
   50% {
-    box-shadow: 0 0 0 14px rgba(239, 68, 68, 0);
+    transform: scale(1.06);
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--danger) 70%, transparent),
+      0 0 24px 4px color-mix(in srgb, var(--danger) 60%, transparent),
+      0 0 0 22px color-mix(in srgb, var(--danger) 0%, transparent);
   }
 }
 
