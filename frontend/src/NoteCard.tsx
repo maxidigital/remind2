@@ -6,8 +6,10 @@ const RIGHT_SWIPE_THRESHOLD = 160 // swipe right abre el menú contextual (Compa
 const RIGHT_ACTIONS_WIDTH = 240 // swipe left reveals: Editar, Archivar, Eliminar
 const LONG_PRESS_MS = 500
 const LONG_PRESS_MOVE_TOLERANCE = 12 // temblor natural del dedo al mantener presionado; más laxo que el umbral de swipe
-const MENU_WIDTH = 190
-const MENU_HEIGHT = 150
+const MENU_WIDTH = 208
+const MENU_HEIGHT = 190
+const MENU_MARGIN = 12
+const MENU_GAP_FROM_TOUCH = 16
 const GHOST_CLICK_GUARD_MS = 400
 
 function formatTime(raw: string): string {
@@ -74,10 +76,12 @@ export default function NoteCard({ note, onArchive, onDelete, onEdit }: Props) {
   }
 
   function openMenuAt(x: number, y: number) {
-    const clampedX = Math.min(x, window.innerWidth - MENU_WIDTH)
-    const clampedY = Math.min(y, window.innerHeight - MENU_HEIGHT)
+    const desiredLeft = x - MENU_WIDTH / 2
+    const desiredTop = y + MENU_GAP_FROM_TOUCH
+    const clampedX = Math.min(Math.max(desiredLeft, MENU_MARGIN), window.innerWidth - MENU_WIDTH - MENU_MARGIN)
+    const clampedY = Math.min(Math.max(desiredTop, MENU_MARGIN), window.innerHeight - MENU_HEIGHT - MENU_MARGIN)
     menuOpenedAt.current = Date.now()
-    setMenuPos({ x: Math.max(8, clampedX), y: Math.max(8, clampedY) })
+    setMenuPos({ x: clampedX, y: clampedY })
   }
 
   function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
@@ -262,33 +266,36 @@ export default function NoteCard({ note, onArchive, onDelete, onEdit }: Props) {
           />
           <div className="menu-dropdown note-context-menu" style={{ left: menuPos.x, top: menuPos.y }}>
             <button
-              className="menu-item"
+              className="menu-item menu-item--share"
               onClick={() => {
                 if (isGhostClick()) return
                 handleShare()
                 setMenuPos(null)
               }}
             >
+              <ShareIcon />
               Compartir
             </button>
             <button
-              className="menu-item"
+              className="menu-item menu-item--edit"
               onClick={() => {
                 if (isGhostClick()) return
                 startEdit()
                 setMenuPos(null)
               }}
             >
+              <EditIcon />
               Editar
             </button>
             <button
-              className="menu-item"
+              className="menu-item menu-item--copy"
               onClick={() => {
                 if (isGhostClick()) return
                 handleCopy()
                 setMenuPos(null)
               }}
             >
+              <CopyIcon />
               Copiar
             </button>
           </div>
@@ -308,5 +315,33 @@ export default function NoteCard({ note, onArchive, onDelete, onEdit }: Props) {
         />
       )}
     </li>
+  )
+}
+
+function ShareIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 15V3" />
+      <path d="M7 8l5-5 5 5" />
+      <path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
+    </svg>
+  )
+}
+
+function EditIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  )
+}
+
+function CopyIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="9" y="9" width="11" height="11" rx="2" />
+      <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+    </svg>
   )
 }

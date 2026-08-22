@@ -303,6 +303,50 @@ body {
   top: auto;
   right: auto;
   z-index: 21;
+  min-width: 208px;
+  padding: 0.4rem;
+  border-radius: 16px;
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.22),
+    0 2px 8px rgba(0, 0, 0, 0.12);
+  transform-origin: top center;
+  animation: note-context-menu-in 0.16s cubic-bezier(0.2, 0.8, 0.3, 1.1);
+}
+
+@keyframes note-context-menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.note-context-menu .menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.note-context-menu .menu-item svg {
+  flex-shrink: 0;
+}
+
+.note-context-menu .menu-item--share svg {
+  color: var(--accent);
+}
+
+.note-context-menu .menu-item--edit svg {
+  color: #64748b;
+}
+
+.note-context-menu .menu-item--copy svg {
+  color: #10b981;
 }
 
 .confirm-backdrop {
