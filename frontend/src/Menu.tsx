@@ -21,6 +21,7 @@ export default function Menu({ email, onLogout }: Props) {
   const [open, setOpen] = useState(false)
   const [aboutOpen, setAboutOpen] = useState(false)
   const [theme, setTheme] = useState<Theme>(getInitialTheme)
+  const [spreadsheetLoading, setSpreadsheetLoading] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -30,11 +31,23 @@ export default function Menu({ email, onLogout }: Props) {
 
   async function handleOpenSpreadsheet() {
     setOpen(false)
+    if (spreadsheetLoading) return
+
+    // Se abre la ventana en el mismo tick del click (gesto del usuario), y
+    // recién se navega una vez resuelto el fetch — abrirla después del
+    // await hacía que el navegador la tratara como popup no solicitado,
+    // dejando una ventana en blanco huérfana que había que cerrar a mano.
+    const win = window.open('', '_blank', 'noopener')
+    if (!win) return // bloqueado por el navegador, nada más que hacer
+
+    setSpreadsheetLoading(true)
     try {
       const url = await fetchSpreadsheetUrl()
-      window.open(url, '_blank', 'noopener')
+      win.location.href = url
     } catch {
-      // ignore — same silent-fail pattern as copy/share in NoteCard
+      win.close()
+    } finally {
+      setSpreadsheetLoading(false)
     }
   }
 
@@ -61,7 +74,7 @@ export default function Menu({ email, onLogout }: Props) {
           >
             {theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
           </button>
-          <button className="menu-item" onClick={handleOpenSpreadsheet}>
+          <button className="menu-item" onClick={handleOpenSpreadsheet} disabled={spreadsheetLoading}>
             Ver planilla
           </button>
           <button className="menu-item menu-item--danger" onClick={onLogout}>
