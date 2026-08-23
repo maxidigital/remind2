@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { saveNote, SaveNoteError } from './api'
 import { enqueue, removeItem, markBlocked } from './offlineQueue'
 import EmptyRecordingDialog from './EmptyRecordingDialog'
+import { AudioLevelMonitor } from './audioLevel'
 
 type Status = 'idle' | 'recording' | 'saving' | 'error'
 
@@ -43,6 +44,7 @@ export default function Recorder({ onSaved }: Props) {
   const streamRef = useRef<MediaStream | null>(null)
   const wakeLockRef = useRef<WakeLockSentinel | null>(null)
   const timerRef = useRef<number | null>(null)
+  const audioLevelRef = useRef<AudioLevelMonitor | null>(null)
 
   async function acquireWakeLock() {
     if (!('wakeLock' in navigator)) return
@@ -96,6 +98,7 @@ export default function Recorder({ onSaved }: Props) {
 
     streamRef.current = stream
     mediaRecorderRef.current = recorder
+    audioLevelRef.current = new AudioLevelMonitor(stream)
     recorder.start()
     setStatus('recording')
     acquireWakeLock()
@@ -117,6 +120,19 @@ export default function Recorder({ onSaved }: Props) {
     }
     streamRef.current?.getTracks().forEach((track) => track.stop())
     releaseWakeLock()
+
+    const hadSound = audioLevelRef.current?.hadSound() ?? true
+    audioLevelRef.current?.dispose()
+    audioLevelRef.current = null
+
+    if (!hadSound) {
+      // No se detectó energía de voz en ningún momento de la grabación: ni
+      // siquiera vale la pena mandarla a Whisper.
+      setShowEmpty(true)
+      setStatus('idle')
+      return
+    }
+
     setStatus('saving')
 
     const effectiveType = mimeType || 'audio/webm'
