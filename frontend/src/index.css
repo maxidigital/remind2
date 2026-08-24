@@ -627,6 +627,7 @@ body {
 }
 
 .record-button {
+  position: relative;
   width: 72px;
   height: 72px;
   border-radius: 50%;
@@ -655,6 +656,90 @@ body {
 .record-button--saving {
   opacity: 0.6;
   cursor: default;
+}
+
+/* Idle: respiración lenta del glow (6.8s) + halo asimétrico girando detrás
+   (23s) — los dos períodos no son múltiplos entre sí a propósito, para que
+   la combinación tarde en repetirse y no se sienta mecánica. Los saltos de
+   intensidad desparejos entre keyframes (18/37/54/77%, en vez de 25/50/75)
+   más un animation-timing-function distinto por tramo son la
+   "irregularidad" — nunca un simple ida y vuelta senoidal. */
+.record-button--idle {
+  animation: rb-breathe 6.8s infinite;
+}
+
+.record-button--idle::before {
+  content: '';
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    color-mix(in srgb, var(--brand-primary) 55%, transparent),
+    transparent 22%,
+    transparent 45%,
+    color-mix(in srgb, var(--brand-primary) 35%, transparent) 60%,
+    transparent 82%,
+    color-mix(in srgb, var(--brand-primary) 55%, transparent)
+  );
+  filter: blur(11px);
+  z-index: -1;
+  pointer-events: none;
+  animation: rb-spin 23s linear infinite;
+}
+
+@keyframes rb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes rb-breathe {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--brand-primary) 40%, transparent),
+      0 0 12px 2px color-mix(in srgb, var(--brand-primary) 28%, transparent),
+      0 4px 14px color-mix(in srgb, var(--brand-primary) 18%, transparent);
+    animation-timing-function: ease-in;
+  }
+  18% {
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--brand-primary) 58%, transparent),
+      0 0 20px 3px color-mix(in srgb, var(--brand-primary) 45%, transparent),
+      0 4px 14px color-mix(in srgb, var(--brand-primary) 26%, transparent);
+    animation-timing-function: ease-out;
+  }
+  37% {
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--brand-primary) 78%, transparent),
+      0 0 30px 6px color-mix(in srgb, var(--brand-primary) 68%, transparent),
+      0 4px 16px color-mix(in srgb, var(--brand-primary) 38%, transparent);
+    animation-timing-function: ease-in-out;
+  }
+  54% {
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--brand-primary) 48%, transparent),
+      0 0 15px 2px color-mix(in srgb, var(--brand-primary) 32%, transparent),
+      0 4px 14px color-mix(in srgb, var(--brand-primary) 20%, transparent);
+    animation-timing-function: ease-in;
+  }
+  77% {
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--brand-primary) 66%, transparent),
+      0 0 24px 5px color-mix(in srgb, var(--brand-primary) 55%, transparent),
+      0 4px 15px color-mix(in srgb, var(--brand-primary) 30%, transparent);
+    animation-timing-function: ease-out;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .record-button--idle {
+    animation: none;
+  }
+  .record-button--idle::before {
+    display: none;
+  }
 }
 
 @keyframes pulse {
