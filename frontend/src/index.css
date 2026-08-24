@@ -253,8 +253,8 @@ body {
   border-radius: 999px;
   cursor: pointer;
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--brand-primary) 50%, transparent),
-    0 0 12px 1px color-mix(in srgb, var(--brand-primary) 45%, transparent);
+    0 0 0 1px color-mix(in srgb, var(--brand-primary) 30%, transparent),
+    0 0 6px color-mix(in srgb, var(--brand-primary) 20%, transparent);
 }
 
 .note-card-wrapper {
