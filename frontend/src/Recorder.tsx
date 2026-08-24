@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { saveNote, SaveNoteError } from './api'
-import { enqueue, removeItem, markBlocked } from './offlineQueue'
+import { enqueue, removeItem, markBlocked, markInFlight, clearInFlight } from './offlineQueue'
 import EmptyRecordingDialog from './EmptyRecordingDialog'
 import { AudioLevelMonitor } from './audioLevel'
 
@@ -150,6 +150,10 @@ export default function Recorder({ onSaved }: Props) {
       // envío directo best-effort en vez de bloquear la grabación.
     }
 
+    // Mientras este envío directo está en vuelo, el loop de reintento de la
+    // cola (visibilitychange/focus/online/intervalo) no debe tocar el mismo
+    // ítem — si no, puede reenviarlo por su cuenta y la nota queda duplicada.
+    if (queueId) markInFlight(queueId)
     try {
       const result = await saveNote(blob, filename)
       if (queueId) await removeItem(queueId)
@@ -183,6 +187,8 @@ export default function Recorder({ onSaved }: Props) {
 
       setError('No se pudo guardar la nota. Se reintentará más tarde.')
       setStatus('error')
+    } finally {
+      if (queueId) clearInFlight(queueId)
     }
   }
 

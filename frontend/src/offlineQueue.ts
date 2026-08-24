@@ -131,34 +131,56 @@ export function usePendingQueue(): QueueItem[] {
   return items
 }
 
-type AttemptResult = 'success' | 'retryable' | 'blocked'
+type AttemptResult = 'success' | 'retryable' | 'blocked' | 'in-flight'
+
+// Ids de notas que se están subiendo en este momento por CUALQUIER camino
+// (envío directo desde Recorder.tsx, o attemptUpload de la propia cola).
+// Sin esto, mientras el envío directo de una nota recién grabada sigue en
+// vuelo (Whisper puede tardar varios segundos), un flushQueue disparado por
+// visibilitychange/focus/online/el intervalo de 30s la ve como 'pending' en
+// IndexedDB y la reenvía por su cuenta — la nota queda guardada dos veces.
+const inFlight = new Set<string>()
+
+export function markInFlight(id: string): void {
+  inFlight.add(id)
+}
+
+export function clearInFlight(id: string): void {
+  inFlight.delete(id)
+}
 
 export async function attemptUpload(item: QueueItem): Promise<AttemptResult> {
+  if (inFlight.has(item.id)) return 'in-flight'
+  inFlight.add(item.id)
   try {
-    await saveNote(item.blob, item.filename)
-    await removeItem(item.id)
-    return 'success'
-  } catch (err) {
-    if (err instanceof SaveNoteError) {
-      if (err.retryable) {
-        await updateItem(item.id, {
-          attemptCount: item.attemptCount + 1,
-          lastError: err.message,
-          lastAttemptAt: Date.now(),
-        })
-        return 'retryable'
+    try {
+      await saveNote(item.blob, item.filename)
+      await removeItem(item.id)
+      return 'success'
+    } catch (err) {
+      if (err instanceof SaveNoteError) {
+        if (err.retryable) {
+          await updateItem(item.id, {
+            attemptCount: item.attemptCount + 1,
+            lastError: err.message,
+            lastAttemptAt: Date.now(),
+          })
+          return 'retryable'
+        }
+        if (err.status === 401) {
+          await markBlocked(item.id, 'AUTH_EXPIRED')
+          return 'blocked'
+        }
+        if (err.status === 413) {
+          await markBlocked(item.id, 'TOO_LARGE')
+          return 'blocked'
+        }
       }
-      if (err.status === 401) {
-        await markBlocked(item.id, 'AUTH_EXPIRED')
-        return 'blocked'
-      }
-      if (err.status === 413) {
-        await markBlocked(item.id, 'TOO_LARGE')
-        return 'blocked'
-      }
+      await markBlocked(item.id, undefined)
+      return 'blocked'
     }
-    await markBlocked(item.id, undefined)
-    return 'blocked'
+  } finally {
+    inFlight.delete(item.id)
   }
 }
 
@@ -168,7 +190,7 @@ export async function flushQueue(): Promise<void> {
   if (flushing) return
   flushing = true
   try {
-    const items = (await listAll()).filter((item) => item.status === 'pending')
+    const items = (await listAll()).filter((item) => item.status === 'pending' && !inFlight.has(item.id))
     for (const item of items) {
       const result = await attemptUpload(item)
       if (result === 'retryable') break
