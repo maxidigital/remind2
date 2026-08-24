@@ -22,6 +22,7 @@ export default function Menu({ email, onLogout }: Props) {
   const [aboutOpen, setAboutOpen] = useState(false)
   const [theme, setTheme] = useState<Theme>(getInitialTheme)
   const [spreadsheetLoading, setSpreadsheetLoading] = useState(false)
+  const [spreadsheetUrl, setSpreadsheetUrl] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -29,19 +30,41 @@ export default function Menu({ email, onLogout }: Props) {
     localStorage.setItem('re.mind2.theme', theme)
   }, [theme])
 
+  // Precachear la URL apenas se monta el menú (no hace falta esperar a que
+  // se abra), para que el click de "Ver planilla" casi siempre la tenga
+  // lista y pueda abrir la ventana ya con destino, en un solo paso
+  // sincrónico — ver por qué en el comentario de handleOpenSpreadsheet.
+  useEffect(() => {
+    fetchSpreadsheetUrl()
+      .then(setSpreadsheetUrl)
+      .catch(() => {})
+  }, [])
+
   async function handleOpenSpreadsheet() {
     setOpen(false)
     if (spreadsheetLoading) return
 
-    // Se abre la ventana en el mismo tick del click (gesto del usuario), y
-    // recién se navega una vez resuelto el fetch — abrirla después del
-    // await hacía que el navegador la tratara como popup no solicitado,
-    // dejando una ventana en blanco huérfana que había que cerrar a mano.
-    // OJO: no se puede pasar 'noopener' acá — con ese flag window.open()
-    // devuelve null (así evita que el opener controle la ventana nueva), y
-    // entonces nunca se llega a navegar a la planilla. Para conseguir el
-    // mismo aislamiento sin perder la referencia, se abre sin 'noopener' y
-    // se corta el vínculo a mano con win.opener = null.
+    if (spreadsheetUrl) {
+      // Camino rápido (el habitual, gracias al precacheo de arriba): la URL
+      // ya está lista, así que se abre directo en el gesto del click. Nada
+      // de ventana en blanco de por medio.
+      window.open(spreadsheetUrl, '_blank', 'noopener')
+      return
+    }
+
+    // Fallback poco frecuente (primera vez, fetch lento, o falló): hay que
+    // abrir la ventana ANTES de tener la URL para que cuente como gesto del
+    // usuario, y navegarla recién cuando el fetch resuelva.
+    // OJO iOS Safari: este patrón (abrir en blanco, navegar después del
+    // await) puede dejar la pestaña original varada en about:blank — Safari
+    // a veces trata esa navegación diferida como una pestaña nueva en vez
+    // de reusar la misma. No hay fix determinístico para ese caso puntual;
+    // por eso el precacheo de arriba existe, para caer en este camino lo
+    // menos posible.
+    // Tampoco se puede pasar 'noopener' acá — con ese flag window.open()
+    // devuelve null, y entonces nunca se llega a navegar a la planilla. Para
+    // conseguir el mismo aislamiento sin perder la referencia, se abre sin
+    // 'noopener' y se corta el vínculo a mano con win.opener = null.
     const win = window.open('', '_blank')
     if (!win) return // bloqueado por el navegador, nada más que hacer
     win.opener = null
@@ -49,6 +72,7 @@ export default function Menu({ email, onLogout }: Props) {
     setSpreadsheetLoading(true)
     try {
       const url = await fetchSpreadsheetUrl()
+      setSpreadsheetUrl(url) // cachear para la próxima vez
       win.location.href = url
     } catch {
       win.close()

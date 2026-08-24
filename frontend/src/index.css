@@ -140,19 +140,19 @@ body {
     animation-timing-function: ease-in;
   }
   22% {
-    filter: drop-shadow(0 0 2px color-mix(in srgb, var(--brand-primary) 18%, transparent));
+    filter: drop-shadow(0 0 3px color-mix(in srgb, var(--brand-primary) 32%, transparent));
     animation-timing-function: ease-out;
   }
   41% {
-    filter: drop-shadow(0 0 3px color-mix(in srgb, var(--brand-primary) 30%, transparent));
+    filter: drop-shadow(0 0 5px color-mix(in srgb, var(--brand-primary) 50%, transparent));
     animation-timing-function: ease-in-out;
   }
   63% {
-    filter: drop-shadow(0 0 1px color-mix(in srgb, var(--brand-primary) 12%, transparent));
+    filter: drop-shadow(0 0 2px color-mix(in srgb, var(--brand-primary) 20%, transparent));
     animation-timing-function: ease-in;
   }
   85% {
-    filter: drop-shadow(0 0 2.5px color-mix(in srgb, var(--brand-primary) 24%, transparent));
+    filter: drop-shadow(0 0 4px color-mix(in srgb, var(--brand-primary) 40%, transparent));
     animation-timing-function: ease-out;
   }
 }
