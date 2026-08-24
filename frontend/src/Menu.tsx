@@ -105,7 +105,7 @@ export default function Menu({ email, onLogout }: Props) {
             {theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
           </button>
           <button className="menu-item" onClick={handleOpenSpreadsheet} disabled={spreadsheetLoading}>
-            Ver planilla
+            Abrir planilla
           </button>
           <button className="menu-item menu-item--danger" onClick={onLogout}>
             Salir
