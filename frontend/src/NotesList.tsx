@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import { archiveNote, deleteNote, fetchNotes, updateNote, updateNoteColor, type NoteEntry } from './api'
 import { usePendingQueue, retryItem, discardItem, subscribe, type QueueItem } from './offlineQueue'
 import NoteCard from './NoteCard'
@@ -11,6 +11,10 @@ interface Props {
 function dayKeyOf(rawDate: string): string {
   const date = new Date(rawDate)
   return Number.isNaN(date.getTime()) ? rawDate : date.toDateString()
+}
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
 function dayLabelOf(rawDate: string): string {
@@ -26,18 +30,25 @@ function dayLabelOf(rawDate: string): string {
   if (diffDays === 0) return 'Hoy'
   if (diffDays === 1) return 'Ayer'
 
-  return date.toLocaleDateString('es-AR', {
+  const weekday = capitalize(date.toLocaleDateString('es-AR', { weekday: 'short' }))
+  const dayMonth = date.toLocaleDateString('es-AR', {
     day: 'numeric',
     month: 'long',
     year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
   })
+
+  return `${weekday}. ${dayMonth}`
 }
 
 type MergedItem =
   | { kind: 'note'; date: string; note: NoteEntry }
   | { kind: 'pending'; date: string; item: QueueItem }
 
-export default function NotesList({ refreshKey }: Props) {
+export interface NotesListHandle {
+  refresh: () => Promise<void>
+}
+
+const NotesList = forwardRef<NotesListHandle, Props>(function NotesList({ refreshKey }, ref) {
   const [notes, setNotes] = useState<NoteEntry[] | null>(null)
   const [expandedRow, setExpandedRow] = useState<number | null>(null)
   const [collapsedDays, setCollapsedDays] = useState<Set<string>>(new Set())
@@ -52,13 +63,17 @@ export default function NotesList({ refreshKey }: Props) {
     })
   }
 
-  function reload() {
-    fetchNotes()
+  function reload(): Promise<void> {
+    return fetchNotes()
       .then(setNotes)
       .catch(() => setNotes([]))
   }
 
-  useEffect(reload, [refreshKey])
+  useEffect(() => {
+    reload()
+  }, [refreshKey])
+
+  useImperativeHandle(ref, () => ({ refresh: reload }), [])
 
   // Cuando un pendiente se sube con éxito y desaparece de la cola, refrescar
   // las notas confirmadas para que la nota recién sincronizada aparezca.
@@ -149,4 +164,6 @@ export default function NotesList({ refreshKey }: Props) {
       })}
     </ul>
   )
-}
+})
+
+export default NotesList

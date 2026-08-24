@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { logout } from './api'
 import Recorder from './Recorder'
-import NotesList from './NotesList'
+import NotesList, { type NotesListHandle } from './NotesList'
+import PullToRefresh from './PullToRefresh'
 import Menu from './Menu'
 import { startAutoRetry } from './offlineQueue'
 
@@ -12,8 +13,13 @@ interface Props {
 
 export default function Home({ email, onLoggedOut }: Props) {
   const [refreshKey, setRefreshKey] = useState(0)
+  const notesListRef = useRef<NotesListHandle>(null)
 
   useEffect(() => startAutoRetry(), [])
+
+  const handlePullRefresh = useCallback(async () => {
+    await notesListRef.current?.refresh()
+  }, [])
 
   async function handleLogout() {
     await logout()
@@ -31,7 +37,9 @@ export default function Home({ email, onLoggedOut }: Props) {
       </header>
 
       <main className="notes-area">
-        <NotesList refreshKey={refreshKey} />
+        <PullToRefresh onRefresh={handlePullRefresh}>
+          <NotesList ref={notesListRef} refreshKey={refreshKey} />
+        </PullToRefresh>
       </main>
 
       <Recorder onSaved={() => setRefreshKey((k) => k + 1)} />
