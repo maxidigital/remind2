@@ -125,35 +125,49 @@ body {
 .header-icon {
   height: 26px;
   width: auto;
-  animation: header-icon-breathe 9.5s infinite;
 }
 
-/* Mismo lenguaje que el glow del botón de grabar (rb-breathe: tramos
-   desparejos + easing distinto por tramo), pero mucho más sutil en
-   amplitud y con período propio (9.5s en vez de 6.8s) para que no lata en
-   sincro con el botón. drop-shadow (no box-shadow) porque sigue la forma
-   real del ícono en vez de su bounding box rectangular. */
-@keyframes header-icon-breathe {
+.header-drift {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -20%;
+  width: 45%;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at 35% 45%,
+    color-mix(in srgb, var(--brand-primary) 45%, transparent) 0%,
+    color-mix(in srgb, var(--brand-primary) 18%, transparent) 40%,
+    transparent 72%
+  );
+  filter: blur(20px);
+  opacity: 0;
+  animation: header-drift-pass 42s ease-in-out infinite;
+}
+
+/* La mayor parte del ciclo está fuera de vista (opacity 0); sólo en el
+   tramo 66%-93% aparece, cruza el header por atrás del logo/menú y se
+   desvanece — de ahí el "de vez en cuando". transform en vez de left para
+   que anime por compositor y no dispare layout. Sin forma definida (sólo
+   radial-gradient + blur, nada de box-shadow/drop-shadow) para que se lea
+   como un parche de color difuso, no como un glow. */
+@keyframes header-drift-pass {
   0%,
+  66% {
+    transform: translateX(0%);
+    opacity: 0;
+  }
+  72% {
+    opacity: 0.5;
+  }
+  84% {
+    transform: translateX(260%);
+    opacity: 0.35;
+  }
+  93%,
   100% {
-    filter: drop-shadow(0 0 0 color-mix(in srgb, var(--brand-primary) 0%, transparent));
-    animation-timing-function: ease-in;
-  }
-  22% {
-    filter: drop-shadow(0 0 3px color-mix(in srgb, var(--brand-primary) 32%, transparent));
-    animation-timing-function: ease-out;
-  }
-  41% {
-    filter: drop-shadow(0 0 5px color-mix(in srgb, var(--brand-primary) 50%, transparent));
-    animation-timing-function: ease-in-out;
-  }
-  63% {
-    filter: drop-shadow(0 0 2px color-mix(in srgb, var(--brand-primary) 20%, transparent));
-    animation-timing-function: ease-in;
-  }
-  85% {
-    filter: drop-shadow(0 0 4px color-mix(in srgb, var(--brand-primary) 40%, transparent));
-    animation-timing-function: ease-out;
+    transform: translateX(430%);
+    opacity: 0;
   }
 }
 
@@ -812,8 +826,9 @@ body {
   .record-button--idle::before {
     display: none;
   }
-  .header-icon {
+  .header-drift {
     animation: none;
+    opacity: 0;
   }
 }
 

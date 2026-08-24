@@ -29,6 +29,7 @@ export default function Home({ email, onLoggedOut }: Props) {
   return (
     <div className="app">
       <header className="header">
+        <span className="header-drift" aria-hidden="true" />
         <div className="header-brand" title={email}>
           <img className="header-icon" src="/remind_circle.png" alt="" />
           <img className="header-logo" src="/remind.png" alt="re.mind2" />
