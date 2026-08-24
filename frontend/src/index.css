@@ -566,26 +566,28 @@ body {
   text-align: center;
 }
 
+.about-icon {
+  height: 48px;
+  width: auto;
+  margin: 0.5rem 0 0.6rem;
+}
+
 .about-logo {
   height: 32px;
   width: auto;
-  margin: 0.5rem 0 1.25rem;
+  margin: 0 0 1.25rem;
 }
 
-.about-version {
+.about-dialog .about-version {
   color: var(--text-muted);
   font-size: 0.8rem;
   margin-bottom: 0.25rem;
 }
 
-.about-email {
+.about-dialog .about-email {
   color: var(--text-muted);
   font-size: 0.8rem;
-  margin-bottom: 1.25rem;
-}
-
-.about-dialog .confirm-buttons {
-  justify-content: center;
+  margin-bottom: 0;
 }
 
 .confirm-cancel,
