@@ -255,6 +255,12 @@ body {
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--brand-primary) 30%, transparent),
     0 0 6px color-mix(in srgb, var(--brand-primary) 20%, transparent);
+  transition: background 0.15s, color 0.15s;
+}
+
+.day-separator--collapsed {
+  background: var(--brand-primary);
+  color: white;
 }
 
 .note-card-wrapper {
