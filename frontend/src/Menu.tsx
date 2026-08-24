@@ -37,8 +37,14 @@ export default function Menu({ email, onLogout }: Props) {
     // recién se navega una vez resuelto el fetch — abrirla después del
     // await hacía que el navegador la tratara como popup no solicitado,
     // dejando una ventana en blanco huérfana que había que cerrar a mano.
-    const win = window.open('', '_blank', 'noopener')
+    // OJO: no se puede pasar 'noopener' acá — con ese flag window.open()
+    // devuelve null (así evita que el opener controle la ventana nueva), y
+    // entonces nunca se llega a navegar a la planilla. Para conseguir el
+    // mismo aislamiento sin perder la referencia, se abre sin 'noopener' y
+    // se corta el vínculo a mano con win.opener = null.
+    const win = window.open('', '_blank')
     if (!win) return // bloqueado por el navegador, nada más que hacer
+    win.opener = null
 
     setSpreadsheetLoading(true)
     try {
