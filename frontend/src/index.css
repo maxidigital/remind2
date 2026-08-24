@@ -125,6 +125,36 @@ body {
 .header-icon {
   height: 26px;
   width: auto;
+  animation: header-icon-breathe 9.5s infinite;
+}
+
+/* Mismo lenguaje que el glow del botón de grabar (rb-breathe: tramos
+   desparejos + easing distinto por tramo), pero mucho más sutil en
+   amplitud y con período propio (9.5s en vez de 6.8s) para que no lata en
+   sincro con el botón. drop-shadow (no box-shadow) porque sigue la forma
+   real del ícono en vez de su bounding box rectangular. */
+@keyframes header-icon-breathe {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 color-mix(in srgb, var(--brand-primary) 0%, transparent));
+    animation-timing-function: ease-in;
+  }
+  22% {
+    filter: drop-shadow(0 0 2px color-mix(in srgb, var(--brand-primary) 18%, transparent));
+    animation-timing-function: ease-out;
+  }
+  41% {
+    filter: drop-shadow(0 0 3px color-mix(in srgb, var(--brand-primary) 30%, transparent));
+    animation-timing-function: ease-in-out;
+  }
+  63% {
+    filter: drop-shadow(0 0 1px color-mix(in srgb, var(--brand-primary) 12%, transparent));
+    animation-timing-function: ease-in;
+  }
+  85% {
+    filter: drop-shadow(0 0 2.5px color-mix(in srgb, var(--brand-primary) 24%, transparent));
+    animation-timing-function: ease-out;
+  }
 }
 
 .header-logo {
@@ -781,6 +811,9 @@ body {
   }
   .record-button--idle::before {
     display: none;
+  }
+  .header-icon {
+    animation: none;
   }
 }
 
