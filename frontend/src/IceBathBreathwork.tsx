@@ -133,13 +133,14 @@ export default function IceBathBreathwork({ onBack }: Props) {
 
       {phase === 'breathing' && (
         <div className="breathwork-stage">
-          <div
-            className="breath-circle"
-            style={{
-              transform: breathStage === 'inhale' ? 'scale(1)' : 'scale(0.72)',
-              transitionDuration: `${breathStage === 'inhale' ? INHALE_MS : EXHALE_MS}ms`,
-            }}
-          >
+          <div className="breath-circle-wrap">
+            <div
+              className="breath-circle breath-circle--animated"
+              style={{
+                transform: breathStage === 'inhale' ? 'scale(1)' : 'scale(0.4)',
+                transitionDuration: `${breathStage === 'inhale' ? INHALE_MS : EXHALE_MS}ms`,
+              }}
+            />
             <span className="breath-count">{breathCount}</span>
           </div>
           <p className="breathwork-hint">{breathStage === 'inhale' ? 'Inhalá' : 'Exhalá'}</p>

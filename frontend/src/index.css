@@ -910,6 +910,15 @@ body {
   gap: 1.5rem;
 }
 
+.breath-circle-wrap {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .breath-circle {
   width: 220px;
   height: 220px;
@@ -919,19 +928,24 @@ body {
   justify-content: center;
   background: var(--elevated);
   box-shadow:
-    0 0 0 2px color-mix(in srgb, var(--brand-primary) 55%, transparent),
-    0 0 30px 4px color-mix(in srgb, var(--brand-primary) 40%, transparent);
-  transition: transform ease-in-out;
+    0 0 0 2px color-mix(in srgb, #10b981 60%, transparent),
+    0 0 60px 12px color-mix(in srgb, #10b981 50%, transparent);
   touch-action: manipulation;
   user-select: none;
 }
 
+.breath-circle--animated {
+  position: absolute;
+  inset: 0;
+  transition: transform ease-in-out;
+}
+
 .breath-circle--static {
-  transition: none;
   cursor: pointer;
 }
 
 .breath-count {
+  position: relative;
   font-size: 2.5rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
