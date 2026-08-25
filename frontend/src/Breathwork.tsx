@@ -5,7 +5,7 @@ import { unlockAudio, playPhaseChange, playRetentionPing, playDoubleTapConfirm, 
 type Phase = 'idle' | 'breathing' | 'retention' | 'recovery' | 'done'
 type BreathStage = 'inhale' | 'exhale'
 
-const TOTAL_BREATHS = 40
+const TOTAL_BREATHS = 10
 const INHALE_MS = 1600
 const EXHALE_MS = 1600
 const RETENTION_PING_SECONDS = 30
