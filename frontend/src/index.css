@@ -123,8 +123,13 @@ body {
   gap: 0.4rem;
 }
 
-.app-grid-trigger {
+.app-switcher {
   margin-left: auto;
+}
+
+.app-switcher-dropdown {
+  left: auto;
+  right: 0;
 }
 
 .header-icon {
@@ -186,6 +191,12 @@ body {
 
 .menu-item--danger {
   color: var(--danger);
+}
+
+.menu-item--active {
+  color: var(--brand-primary);
+  font-weight: 600;
+  cursor: default;
 }
 
 .menu-divider {

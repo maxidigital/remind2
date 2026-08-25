@@ -5,13 +5,22 @@
 let audioContext: AudioContext | null = null
 
 export function unlockAudio(): void {
-  if (audioContext) return
-  const AudioContextClass = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
-  audioContext = new AudioContextClass()
+  if (!audioContext) {
+    const AudioContextClass = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+    audioContext = new AudioContextClass()
+  }
+  // En iOS Safari (y algunos otros) el context arranca 'suspended' aunque se
+  // cree dentro de un gesto del usuario — sin este resume() no suena nada.
+  if (audioContext.state === 'suspended') {
+    audioContext.resume().catch(() => {})
+  }
 }
 
 function playTone(freq: number, durationMs: number, startDelayMs = 0): void {
   if (!audioContext) return
+  if (audioContext.state === 'suspended') {
+    audioContext.resume().catch(() => {})
+  }
   const ctx = audioContext
   const startAt = ctx.currentTime + startDelayMs / 1000
   const durationSec = durationMs / 1000

@@ -4,6 +4,7 @@ import Recorder from './Recorder'
 import NotesList, { type NotesListHandle } from './NotesList'
 import PullToRefresh from './PullToRefresh'
 import Menu from './Menu'
+import AppSwitcher from './AppSwitcher'
 import { startAutoRetry } from './offlineQueue'
 
 interface Props {
@@ -35,9 +36,7 @@ export default function Home({ email, onLoggedOut, onOpenBreathwork }: Props) {
           <img className="header-icon" src="/remind_circle.png" alt="" />
           <img className="header-logo" src="/remind.png" alt="re.mind2" />
         </div>
-        <button className="menu-trigger app-grid-trigger" onClick={onOpenBreathwork} aria-label="Apps">
-          <AppGridIcon />
-        </button>
+        <AppSwitcher onOpenBreathwork={onOpenBreathwork} />
       </header>
 
       <main className="notes-area">
@@ -48,21 +47,5 @@ export default function Home({ email, onLoggedOut, onOpenBreathwork }: Props) {
 
       <Recorder onSaved={() => setRefreshKey((k) => k + 1)} />
     </div>
-  )
-}
-
-function AppGridIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
-      <circle cx="5" cy="5" r="1.8" />
-      <circle cx="12" cy="5" r="1.8" />
-      <circle cx="19" cy="5" r="1.8" />
-      <circle cx="5" cy="12" r="1.8" />
-      <circle cx="12" cy="12" r="1.8" />
-      <circle cx="19" cy="12" r="1.8" />
-      <circle cx="5" cy="19" r="1.8" />
-      <circle cx="12" cy="19" r="1.8" />
-      <circle cx="19" cy="19" r="1.8" />
-    </svg>
   )
 }
