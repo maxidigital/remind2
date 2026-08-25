@@ -9,9 +9,10 @@ import { startAutoRetry } from './offlineQueue'
 interface Props {
   email: string
   onLoggedOut: () => void
+  onOpenBreathwork: () => void
 }
 
-export default function Home({ email, onLoggedOut }: Props) {
+export default function Home({ email, onLoggedOut, onOpenBreathwork }: Props) {
   const [refreshKey, setRefreshKey] = useState(0)
   const notesListRef = useRef<NotesListHandle>(null)
 
@@ -34,7 +35,7 @@ export default function Home({ email, onLoggedOut }: Props) {
           <img className="header-icon" src="/remind_circle.png" alt="" />
           <img className="header-logo" src="/remind.png" alt="re.mind2" />
         </div>
-        <button className="menu-trigger app-grid-trigger" aria-label="Apps">
+        <button className="menu-trigger app-grid-trigger" onClick={onOpenBreathwork} aria-label="Apps">
           <AppGridIcon />
         </button>
       </header>

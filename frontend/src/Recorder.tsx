@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { saveNote, SaveNoteError } from './api'
 import { enqueue, removeItem, markBlocked, markInFlight, clearInFlight } from './offlineQueue'
 import EmptyRecordingDialog from './EmptyRecordingDialog'
 import { AudioLevelMonitor } from './audioLevel'
+import { useWakeLock } from './useWakeLock'
 
 type Status = 'idle' | 'recording' | 'saving' | 'error'
 
@@ -42,37 +43,10 @@ export default function Recorder({ onSaved }: Props) {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const streamRef = useRef<MediaStream | null>(null)
-  const wakeLockRef = useRef<WakeLockSentinel | null>(null)
   const timerRef = useRef<number | null>(null)
   const audioLevelRef = useRef<AudioLevelMonitor | null>(null)
 
-  async function acquireWakeLock() {
-    if (!('wakeLock' in navigator)) return
-    try {
-      wakeLockRef.current = await navigator.wakeLock.request('screen')
-    } catch {
-      // el navegador puede rechazar el pedido (pestaña oculta, batería baja, etc.); no es fatal
-    }
-  }
-
-  async function releaseWakeLock() {
-    try {
-      await wakeLockRef.current?.release()
-    } catch {
-      // ya liberado o no soportado
-    }
-    wakeLockRef.current = null
-  }
-
-  useEffect(() => {
-    function handleVisibilityChange() {
-      if (document.visibilityState === 'visible' && status === 'recording') {
-        acquireWakeLock()
-      }
-    }
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [status])
+  useWakeLock(status === 'recording')
 
   async function start() {
     setError(null)
@@ -101,7 +75,6 @@ export default function Recorder({ onSaved }: Props) {
     audioLevelRef.current = new AudioLevelMonitor(stream)
     recorder.start()
     setStatus('recording')
-    acquireWakeLock()
 
     setElapsedSeconds(0)
     timerRef.current = window.setInterval(() => {
@@ -119,7 +92,6 @@ export default function Recorder({ onSaved }: Props) {
       timerRef.current = null
     }
     streamRef.current?.getTracks().forEach((track) => track.stop())
-    releaseWakeLock()
 
     const hadSound = audioLevelRef.current?.hadSound() ?? true
     audioLevelRef.current?.dispose()
