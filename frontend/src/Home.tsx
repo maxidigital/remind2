@@ -29,12 +29,14 @@ export default function Home({ email, onLoggedOut }: Props) {
   return (
     <div className="app">
       <header className="header">
-        <span className="header-drift" aria-hidden="true" />
+        <Menu email={email} onLogout={handleLogout} />
         <div className="header-brand" title={email}>
           <img className="header-icon" src="/remind_circle.png" alt="" />
           <img className="header-logo" src="/remind.png" alt="re.mind2" />
         </div>
-        <Menu email={email} onLogout={handleLogout} />
+        <button className="menu-trigger app-grid-trigger" aria-label="Apps">
+          <AppGridIcon />
+        </button>
       </header>
 
       <main className="notes-area">
@@ -45,5 +47,21 @@ export default function Home({ email, onLoggedOut }: Props) {
 
       <Recorder onSaved={() => setRefreshKey((k) => k + 1)} />
     </div>
+  )
+}
+
+function AppGridIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+      <circle cx="5" cy="5" r="1.8" />
+      <circle cx="12" cy="5" r="1.8" />
+      <circle cx="19" cy="5" r="1.8" />
+      <circle cx="5" cy="12" r="1.8" />
+      <circle cx="12" cy="12" r="1.8" />
+      <circle cx="19" cy="12" r="1.8" />
+      <circle cx="5" cy="19" r="1.8" />
+      <circle cx="12" cy="19" r="1.8" />
+      <circle cx="19" cy="19" r="1.8" />
+    </svg>
   )
 }
