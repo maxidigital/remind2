@@ -127,11 +127,6 @@ body {
   margin-left: auto;
 }
 
-.app-switcher-dropdown {
-  left: auto;
-  right: 0;
-}
-
 .header-icon {
   height: 26px;
   width: auto;
@@ -171,6 +166,11 @@ body {
     0 6px 20px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   z-index: 10;
+}
+
+.app-switcher .menu-dropdown {
+  left: auto;
+  right: 0;
 }
 
 .menu-item {

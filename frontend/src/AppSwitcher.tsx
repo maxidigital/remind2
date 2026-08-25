@@ -24,7 +24,7 @@ export default function AppSwitcher({ onOpenBreathwork }: Props) {
         <AppGridIcon />
       </button>
       {open && (
-        <div className="menu-dropdown app-switcher-dropdown">
+        <div className="menu-dropdown">
           <button className="menu-item menu-item--active" onClick={() => setOpen(false)}>
             Mis notas
           </button>
