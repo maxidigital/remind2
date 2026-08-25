@@ -14,6 +14,17 @@ export function unlockAudio(): void {
   if (audioContext.state === 'suspended') {
     audioContext.resume().catch(() => {})
   }
+  // Truco de desbloqueo de iOS: no alcanza con crear/resumir el context, hace
+  // falta arrancar un nodo de audio real (aunque sea inaudible) DENTRO del
+  // mismo gesto para que el sistema deje sonar lo que se programe después
+  // (los tonos reales suenan recién más tarde, ya fuera del gesto).
+  const oscillator = audioContext.createOscillator()
+  const silentGain = audioContext.createGain()
+  silentGain.gain.value = 0
+  oscillator.connect(silentGain)
+  silentGain.connect(audioContext.destination)
+  oscillator.start(audioContext.currentTime)
+  oscillator.stop(audioContext.currentTime + 0.01)
 }
 
 function playTone(freq: number, durationMs: number, startDelayMs = 0): void {
@@ -34,15 +45,15 @@ function playTone(freq: number, durationMs: number, startDelayMs = 0): void {
 
   // fade in/out corto para evitar el "click" de arrancar/cortar la onda seca
   gain.gain.setValueAtTime(0, startAt)
-  gain.gain.linearRampToValueAtTime(0.2, startAt + 0.015)
-  gain.gain.linearRampToValueAtTime(0.2, startAt + durationSec - 0.03)
+  gain.gain.linearRampToValueAtTime(0.35, startAt + 0.015)
+  gain.gain.linearRampToValueAtTime(0.35, startAt + durationSec - 0.03)
   gain.gain.linearRampToValueAtTime(0, startAt + durationSec)
 
   oscillator.start(startAt)
   oscillator.stop(startAt + durationSec)
 }
 
-// Fin de las 40 respiraciones, arranca la retención: dos notas ascendentes.
+// Fin de la fase de respiración, arranca la retención: dos notas ascendentes.
 export function playPhaseChange(): void {
   playTone(440, 150)
   playTone(660, 200, 160)
