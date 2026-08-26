@@ -693,7 +693,7 @@ body {
   border-radius: 50%;
   border: none;
   background: var(--elevated);
-  color: white;
+  color: var(--text);
   display: flex;
   align-items: center;
   justify-content: center;
