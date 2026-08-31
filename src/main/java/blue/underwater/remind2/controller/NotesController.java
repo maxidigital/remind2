@@ -1,5 +1,6 @@
 package blue.underwater.remind2.controller;
 
+import blue.underwater.remind2.AccessLog;
 import blue.underwater.remind2.auth.SessionCookie;
 import blue.underwater.remind2.auth.UserCredentialsStore;
 import blue.underwater.remind2.exception.UpstreamServiceException;
@@ -38,20 +39,23 @@ public class NotesController {
     private final WhisperTranscriptionService transcriptionService;
     private final UserSpreadsheetService spreadsheetService;
     private final NotesSheetService sheetService;
+    private final AccessLog accessLog;
 
     public NotesController(SessionCookie sessionCookie,
                             UserCredentialsStore credentialsStore,
                             WhisperTranscriptionService transcriptionService,
                             UserSpreadsheetService spreadsheetService,
-                            NotesSheetService sheetService) {
+                            NotesSheetService sheetService,
+                            AccessLog accessLog) {
         this.sessionCookie = sessionCookie;
         this.credentialsStore = credentialsStore;
         this.transcriptionService = transcriptionService;
         this.spreadsheetService = spreadsheetService;
         this.sheetService = sheetService;
+        this.accessLog = accessLog;
     }
 
-    private record AuthenticatedUser(String userId, Credential credential) {
+    private record AuthenticatedUser(String userId, String email, Credential credential) {
     }
 
     @GetMapping
@@ -100,6 +104,7 @@ public class NotesController {
             throw new UpstreamServiceException("SHEETS_FAILED", e);
         }
 
+        accessLog.record(user.email(), "note.create");
         return Map.of("text", text, "spreadsheetUrl", buildSpreadsheetUrl(spreadsheetId));
     }
 
@@ -146,6 +151,7 @@ public class NotesController {
             return;
         }
         sheetService.updateText(spreadsheetId, user.credential(), row, text);
+        accessLog.record(user.email(), "note.update", Map.of("row", row));
     }
 
     @PutMapping("/{row}/color")
@@ -164,6 +170,7 @@ public class NotesController {
             return;
         }
         sheetService.updateColor(spreadsheetId, user.credential(), row, color);
+        accessLog.record(user.email(), "note.color", Map.of("row", row));
     }
 
     @PostMapping("/{row}/archive")
@@ -180,6 +187,7 @@ public class NotesController {
             return;
         }
         sheetService.archive(spreadsheetId, user.credential(), row);
+        accessLog.record(user.email(), "note.archive", Map.of("row", row));
     }
 
     @DeleteMapping("/{row}")
@@ -196,6 +204,7 @@ public class NotesController {
             return;
         }
         sheetService.delete(spreadsheetId, user.credential(), row);
+        accessLog.record(user.email(), "note.delete", Map.of("row", row));
     }
 
     private AuthenticatedUser requireUser(String authCookie, HttpServletResponse response) throws IOException {
@@ -211,6 +220,6 @@ public class NotesController {
             return null;
         }
 
-        return new AuthenticatedUser(identity.userId(), credential);
+        return new AuthenticatedUser(identity.userId(), identity.email(), credential);
     }
 }

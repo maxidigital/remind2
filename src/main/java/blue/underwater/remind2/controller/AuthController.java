@@ -1,5 +1,6 @@
 package blue.underwater.remind2.controller;
 
+import blue.underwater.remind2.AccessLog;
 import blue.underwater.remind2.auth.GoogleAuthService;
 import blue.underwater.remind2.auth.GoogleIdentity;
 import blue.underwater.remind2.auth.SessionCookie;
@@ -23,10 +24,12 @@ public class AuthController {
 
     private final GoogleAuthService authService;
     private final SessionCookie sessionCookie;
+    private final AccessLog accessLog;
 
-    public AuthController(GoogleAuthService authService, SessionCookie sessionCookie) {
+    public AuthController(GoogleAuthService authService, SessionCookie sessionCookie, AccessLog accessLog) {
         this.authService = authService;
         this.sessionCookie = sessionCookie;
+        this.accessLog = accessLog;
     }
 
     @GetMapping("/login")
@@ -62,6 +65,7 @@ public class AuthController {
         } else {
             result.put("authenticated", true);
             result.put("email", identity.email());
+            accessLog.record(identity.email(), "open");
         }
         return result;
     }
