@@ -1,11 +1,50 @@
 #!/usr/bin/env bash
-# Muestra quién entró y qué hizo, y cuándo (volumen del servicio: access-log.jsonl).
-# Requiere estar linkeado con `railway link` al proyecto re.mind2.
+# Muestra quién entró y qué hizo, y cuándo: una línea por evento del access-log.
+#
+#   ./scripts/ver-logs.sh              # prod (Railway), todo el log
+#   ./scripts/ver-logs.sh -f           # prod, en vivo (tail -f)
+#   ./scripts/ver-logs.sh -l           # local (./user_tokens/access-log.jsonl)
+#   ./scripts/ver-logs.sh -l -f
+#   ./scripts/ver-logs.sh | grep note.delete
+#
+# Prod usa `railway ssh` con el proyecto/servicio explícitos, así que NO toca el
+# `railway link` global. Requiere la sesión del CLI de Railway iniciada.
 set -euo pipefail
 
-LOG_PATH="${1:-/app/user_tokens/access-log.jsonl}"
+PROJECT="re.mind2"
+SERVICE="underwater"
+ENVIRONMENT="production"
+REMOTE_PATH="/app/user_tokens/access-log.jsonl"
+LOCAL_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/user_tokens/access-log.jsonl"
 
-railway ssh cat "$LOG_PATH" | while IFS= read -r linea; do
-  [ -z "$linea" ] && continue
-  echo "$linea" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['ts'], d['email'], d['event'], d.get('row',''))"
+follow=false
+local=false
+for arg in "$@"; do
+  case "$arg" in
+    -f|--follow) follow=true ;;
+    -l|--local)  local=true ;;
+    -h|--help)   sed -n '2,15p' "$0"; exit 0 ;;
+    *) echo "opción desconocida: $arg" >&2; exit 2 ;;
+  esac
 done
+
+# Da formato: {ts,email,event,row?} -> "ts  email  event  row"
+fmt() {
+  while IFS= read -r linea; do
+    [ -z "$linea" ] && continue
+    printf '%s\n' "$linea" | python3 -c "import json,sys
+try:
+    d = json.loads(sys.stdin.read())
+    print(d.get('ts',''), d.get('email',''), d.get('event',''), d.get('row',''))
+except Exception:
+    pass"
+  done
+}
+
+if $local; then
+  [ -f "$LOCAL_PATH" ] || { echo "no existe $LOCAL_PATH (¿corriste la app en local?)" >&2; exit 1; }
+  if $follow; then tail -n +1 -f "$LOCAL_PATH" | fmt; else cat "$LOCAL_PATH" | fmt; fi
+else
+  cmd=(railway ssh -p "$PROJECT" -s "$SERVICE" -e "$ENVIRONMENT")
+  if $follow; then "${cmd[@]}" tail -n +1 -f "$REMOTE_PATH" | fmt; else "${cmd[@]}" cat "$REMOTE_PATH" | fmt; fi
+fi
