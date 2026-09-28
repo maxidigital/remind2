@@ -131,7 +131,7 @@ export function usePendingQueue(): QueueItem[] {
   return items
 }
 
-type AttemptResult = 'success' | 'retryable' | 'blocked' | 'in-flight'
+type AttemptResult = 'success' | 'retryable' | 'blocked' | 'auth-expired' | 'in-flight'
 
 // Ids de notas que se están subiendo en este momento por CUALQUIER camino
 // (envío directo desde Recorder.tsx, o attemptUpload de la propia cola).
@@ -169,7 +169,7 @@ export async function attemptUpload(item: QueueItem): Promise<AttemptResult> {
         }
         if (err.status === 401) {
           await markBlocked(item.id, 'AUTH_EXPIRED')
-          return 'blocked'
+          return 'auth-expired'
         }
         if (err.status === 413) {
           await markBlocked(item.id, 'TOO_LARGE')
@@ -193,7 +193,9 @@ export async function flushQueue(): Promise<void> {
     const items = (await listAll()).filter((item) => item.status === 'pending' && !inFlight.has(item.id))
     for (const item of items) {
       const result = await attemptUpload(item)
-      if (result === 'retryable') break
+      // Con la sesión vencida los demás van a fallar igual, y cada intento
+      // ya pagó una transcripción de Whisper antes de fallar en Sheets.
+      if (result === 'retryable' || result === 'auth-expired') break
     }
   } finally {
     flushing = false
@@ -213,8 +215,22 @@ export async function discardItem(id: string): Promise<void> {
 
 const AUTO_RETRY_INTERVAL_MS = 30_000
 
+// Los ítems bloqueados por sesión vencida no se reintentan solos; pero
+// startAutoRetry corre al montar Home, o sea con el usuario ya logueado (quizás
+// recién relogueado), así que es el momento de devolverlos a la cola.
+async function unblockAuthExpired(): Promise<void> {
+  const items = await listAll()
+  for (const item of items) {
+    if (item.status === 'blocked' && item.blockedReason === 'AUTH_EXPIRED') {
+      await updateItem(item.id, { status: 'pending', blockedReason: undefined })
+    }
+  }
+}
+
 export function startAutoRetry(): () => void {
-  flushQueue()
+  unblockAuthExpired()
+    .catch(() => {})
+    .then(() => flushQueue())
 
   function handleOnline() {
     flushQueue()
