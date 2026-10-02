@@ -11,7 +11,10 @@
 # `railway link` global. Requiere la sesión del CLI de Railway iniciada.
 set -euo pipefail
 
-PROJECT="re.mind2"
+# `railway ssh -p` solo acepta el ID del proyecto: con el nombre ("re.mind2")
+# falla con "Project not found" (a diferencia de `railway deployment list`).
+# Para sacar los IDs: railway list --json
+PROJECT="dad8a73a-6466-456a-818f-21dfe1aeb5a4"  # re.mind2
 SERVICE="underwater"
 ENVIRONMENT="production"
 REMOTE_PATH="/app/user_tokens/access-log.jsonl"
