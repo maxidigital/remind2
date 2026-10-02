@@ -3,6 +3,7 @@ package blue.underwater.remind2.controller;
 import blue.underwater.remind2.AccessLog;
 import blue.underwater.remind2.auth.SessionCookie;
 import blue.underwater.remind2.auth.UserCredentialsStore;
+import blue.underwater.remind2.drive.AudioDriveService;
 import blue.underwater.remind2.exception.UpstreamServiceException;
 import blue.underwater.remind2.sheets.NotesSheetService;
 import blue.underwater.remind2.sheets.UserSpreadsheetService;
@@ -25,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -39,6 +41,7 @@ public class NotesController {
     private final WhisperTranscriptionService transcriptionService;
     private final UserSpreadsheetService spreadsheetService;
     private final NotesSheetService sheetService;
+    private final AudioDriveService audioDriveService;
     private final AccessLog accessLog;
 
     public NotesController(SessionCookie sessionCookie,
@@ -46,12 +49,14 @@ public class NotesController {
                             WhisperTranscriptionService transcriptionService,
                             UserSpreadsheetService spreadsheetService,
                             NotesSheetService sheetService,
+                            AudioDriveService audioDriveService,
                             AccessLog accessLog) {
         this.sessionCookie = sessionCookie;
         this.credentialsStore = credentialsStore;
         this.transcriptionService = transcriptionService;
         this.spreadsheetService = spreadsheetService;
         this.sheetService = sheetService;
+        this.audioDriveService = audioDriveService;
         this.accessLog = accessLog;
     }
 
@@ -83,6 +88,10 @@ public class NotesController {
             return null;
         }
 
+        // Leído antes de transcribir: transferTo() de Whisper puede mover el
+        // archivo temporal del multipart y dejar el stream inutilizable.
+        byte[] audioBytes = audio.getBytes();
+
         String text;
         try {
             text = transcriptionService.transcribe(audio);
@@ -95,13 +104,23 @@ public class NotesController {
             return Map.of("text", "");
         }
 
+        Instant createdAt = Instant.now();
         String spreadsheetId;
         try {
             spreadsheetId = spreadsheetService.getOrCreateSpreadsheetId(user.userId(), user.credential());
-            sheetService.append(spreadsheetId, user.credential(), text);
+            sheetService.append(spreadsheetId, user.credential(), text, createdAt);
         } catch (Exception e) {
             log.error("Saving note to spreadsheet failed for user {}: {}", user.userId(), e.toString(), e);
             throw new UpstreamServiceException("SHEETS_FAILED", e);
+        }
+
+        // Best effort: la nota ya quedó en la planilla, así que si falla Drive
+        // no devolvemos error — el cliente reintentaría y duplicaría la fila.
+        try {
+            audioDriveService.upload(user.userId(), user.credential(), audioBytes,
+                    audio.getOriginalFilename(), audio.getContentType(), createdAt);
+        } catch (Exception e) {
+            log.error("Saving audio to Drive failed for user {}: {}", user.userId(), e.toString(), e);
         }
 
         accessLog.record(user.email(), "note.create");

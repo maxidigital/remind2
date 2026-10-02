@@ -37,7 +37,7 @@ public class NotesSheetService {
     public record NoteEntry(int row, String date, String text, String color) {
     }
 
-    public void append(String spreadsheetId, Credential credential, String text)
+    public void append(String spreadsheetId, Credential credential, String text, Instant createdAt)
             throws IOException, GeneralSecurityException {
         Sheets sheets = buildSheetsClient(credential);
 
@@ -45,7 +45,7 @@ public class NotesSheetService {
         // `new Date(...)` needs an explicit UTC marker or it misreads the
         // string as browser-local time and shows the wrong hour.
         ValueRange row = new ValueRange().setValues(
-                List.of(List.of(Instant.now().toString(), text)));
+                List.of(List.of(createdAt.toString(), text)));
 
         sheets.spreadsheets().values()
                 .append(spreadsheetId, "A:B", row)
