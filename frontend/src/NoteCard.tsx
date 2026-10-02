@@ -74,6 +74,10 @@ export default function NoteCard({ note, expanded, onToggleExpand, onArchive, on
     const clampedY = Math.min(Math.max(desiredTop, MENU_MARGIN), window.innerHeight - MENU_HEIGHT - MENU_MARGIN)
     menuOpenedAt.current = Date.now()
     setMenuPos({ x: clampedX, y: clampedY })
+    // vibración cortita al abrir el menú — Android la soporta (Vibration
+    // API), iOS Safari no tiene navigator.vibrate en absoluto (no es un
+    // bug, WebKit nunca la implementó), así que ahí esto no hace nada.
+    navigator.vibrate?.(15)
   }
 
   function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
