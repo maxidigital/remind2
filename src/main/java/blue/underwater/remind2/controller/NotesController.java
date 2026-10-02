@@ -29,6 +29,8 @@ import java.security.GeneralSecurityException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/api/notes")
@@ -43,6 +45,11 @@ public class NotesController {
     private final NotesSheetService sheetService;
     private final AudioDriveService audioDriveService;
     private final AccessLog accessLog;
+
+    // userId + ":" + note id de los POST en curso. Un reintento que llega
+    // mientras el original todavía transcribe recibe 409 (el cliente reintenta
+    // más tarde) en vez de pasar el chequeo en la planilla y duplicar la nota.
+    private final Set<String> notesInProgress = ConcurrentHashMap.newKeySet();
 
     public NotesController(SessionCookie sessionCookie,
                             UserCredentialsStore credentialsStore,
@@ -81,6 +88,7 @@ public class NotesController {
 
     @PostMapping
     public Map<String, String> saveNote(@RequestParam("audio") MultipartFile audio,
+                                         @RequestParam(value = "id", required = false) String noteId,
                                          @CookieValue(name = SessionCookie.COOKIE_NAME, required = false) String authCookie,
                                          HttpServletResponse response) throws IOException, GeneralSecurityException {
         AuthenticatedUser user = requireUser(authCookie, response);
@@ -88,6 +96,35 @@ public class NotesController {
             return null;
         }
 
+        // Clientes viejos (cacheados de antes de la idempotencia) no mandan id.
+        if (noteId == null || noteId.isBlank()) {
+            return createNote(user, audio, "");
+        }
+
+        String progressKey = user.userId() + ":" + noteId;
+        if (!notesInProgress.add(progressKey)) {
+            response.sendError(HttpServletResponse.SC_CONFLICT);
+            return null;
+        }
+        try {
+            // El cliente reintenta cuando no le llega la respuesta, aunque el
+            // servidor sí haya guardado la nota (iOS corta la conexión al volver
+            // de background): si este id ya está en la planilla, no se duplica.
+            String spreadsheetId = spreadsheetService.findSpreadsheetId(user.userId(), user.credential());
+            if (spreadsheetId != null) {
+                String existingText = sheetService.findTextById(spreadsheetId, user.credential(), noteId);
+                if (existingText != null) {
+                    log.info("Note {} already saved for user {}, skipping duplicate", noteId, user.userId());
+                    return Map.of("text", existingText, "spreadsheetUrl", buildSpreadsheetUrl(spreadsheetId));
+                }
+            }
+            return createNote(user, audio, noteId);
+        } finally {
+            notesInProgress.remove(progressKey);
+        }
+    }
+
+    private Map<String, String> createNote(AuthenticatedUser user, MultipartFile audio, String noteId) throws IOException {
         // Leído antes de transcribir: transferTo() de Whisper puede mover el
         // archivo temporal del multipart y dejar el stream inutilizable.
         byte[] audioBytes = audio.getBytes();
@@ -108,7 +145,7 @@ public class NotesController {
         String spreadsheetId;
         try {
             spreadsheetId = spreadsheetService.getOrCreateSpreadsheetId(user.userId(), user.credential());
-            sheetService.append(spreadsheetId, user.credential(), text, createdAt);
+            sheetService.append(spreadsheetId, user.credential(), text, createdAt, noteId);
         } catch (Exception e) {
             log.error("Saving note to spreadsheet failed for user {}: {}", user.userId(), e.toString(), e);
             throw new UpstreamServiceException("SHEETS_FAILED", e);

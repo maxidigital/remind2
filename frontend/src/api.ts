@@ -56,9 +56,14 @@ export class SaveNoteError extends Error {
   }
 }
 
-export async function saveNote(blob: Blob, filename: string): Promise<SaveNoteResponse> {
+// `id` es el id de la nota en la cola offline. El backend lo usa como clave de
+// idempotencia: si un envío llegó y se guardó pero la respuesta se perdió (iOS
+// corta conexiones al volver de background), el reintento con el mismo id
+// devuelve la nota ya guardada en vez de duplicarla.
+export async function saveNote(blob: Blob, filename: string, id: string): Promise<SaveNoteResponse> {
   const formData = new FormData()
   formData.append('audio', blob, filename)
+  formData.append('id', id)
 
   let res: Response
   try {
@@ -75,7 +80,10 @@ export async function saveNote(blob: Blob, filename: string): Promise<SaveNoteRe
     } catch {
       // no/invalid JSON body — leave code undefined
     }
-    throw new SaveNoteError(`HTTP ${res.status}`, { status: res.status, code, retryable: res.status >= 500 })
+    // 409: el mismo id todavía se está procesando en el backend — reintentar
+    // más tarde devuelve el resultado ya guardado.
+    const retryable = res.status >= 500 || res.status === 409
+    throw new SaveNoteError(`HTTP ${res.status}`, { status: res.status, code, retryable })
   }
 
   return res.json()

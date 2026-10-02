@@ -37,7 +37,11 @@ public class NotesSheetService {
     public record NoteEntry(int row, String date, String text, String color) {
     }
 
-    public void append(String spreadsheetId, Credential credential, String text, Instant createdAt)
+    /**
+     * Column E holds the client's note id (idempotency key), so a retry of a
+     * note that was already saved can be recognized — see findTextById.
+     */
+    public void append(String spreadsheetId, Credential credential, String text, Instant createdAt, String noteId)
             throws IOException, GeneralSecurityException {
         Sheets sheets = buildSheetsClient(credential);
 
@@ -45,12 +49,33 @@ public class NotesSheetService {
         // `new Date(...)` needs an explicit UTC marker or it misreads the
         // string as browser-local time and shows the wrong hour.
         ValueRange row = new ValueRange().setValues(
-                List.of(List.of(createdAt.toString(), text)));
+                List.of(List.of(createdAt.toString(), text, "", "", noteId)));
 
         sheets.spreadsheets().values()
-                .append(spreadsheetId, "A:B", row)
+                .append(spreadsheetId, "A:E", row)
                 .setValueInputOption("RAW")
                 .execute();
+    }
+
+    /** Text of the note saved with this client id, or null if none was. */
+    public String findTextById(String spreadsheetId, Credential credential, String noteId)
+            throws IOException, GeneralSecurityException {
+        Sheets sheets = buildSheetsClient(credential);
+
+        List<List<Object>> rows = sheets.spreadsheets().values()
+                .get(spreadsheetId, "A:E")
+                .execute()
+                .getValues();
+        if (rows == null) {
+            return null;
+        }
+        for (int i = rows.size() - 1; i >= 1; i--) {
+            List<Object> row = rows.get(i);
+            if (row.size() > 4 && noteId.equals(String.valueOf(row.get(4)))) {
+                return row.size() > 1 ? String.valueOf(row.get(1)) : "";
+            }
+        }
+        return null;
     }
 
     public List<NoteEntry> readAll(String spreadsheetId, Credential credential)

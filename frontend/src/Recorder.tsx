@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { saveNote, SaveNoteError } from './api'
-import { enqueue, removeItem, markBlocked, markInFlight, clearInFlight } from './offlineQueue'
+import { enqueue, newId, removeItem, markBlocked, markInFlight, clearInFlight } from './offlineQueue'
 import EmptyRecordingDialog from './EmptyRecordingDialog'
 import { AudioLevelMonitor } from './audioLevel'
 import { useWakeLock } from './useWakeLock'
@@ -127,7 +127,7 @@ export default function Recorder({ onSaved }: Props) {
     // ítem — si no, puede reenviarlo por su cuenta y la nota queda duplicada.
     if (queueId) markInFlight(queueId)
     try {
-      const result = await saveNote(blob, filename)
+      const result = await saveNote(blob, filename, queueId ?? newId())
       if (queueId) await removeItem(queueId)
       if (result.text.trim()) {
         onSaved()

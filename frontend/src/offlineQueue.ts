@@ -36,7 +36,7 @@ function openDb(): Promise<IDBDatabase> {
   return dbPromise
 }
 
-function newId(): string {
+export function newId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID()
   }
@@ -89,11 +89,20 @@ async function getItem(id: string): Promise<QueueItem | undefined> {
   return withStore('readonly', (store) => store.get(id))
 }
 
+// get + put en una sola transacción: si fueran separadas, un removeItem entre
+// ambas (la subida terminó justo) haría que el put resucite una nota ya subida.
 export async function updateItem(id: string, patch: Partial<QueueItem>): Promise<void> {
-  const current = await getItem(id)
-  if (!current) return
-  const updated = { ...current, ...patch }
-  await withStore('readwrite', (store) => store.put(updated))
+  const db = await openDb()
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite')
+    const store = tx.objectStore(STORE_NAME)
+    const request = store.get(id)
+    request.onsuccess = () => {
+      if (request.result) store.put({ ...request.result, ...patch })
+    }
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(tx.error)
+  })
   notify()
 }
 
@@ -154,7 +163,7 @@ export async function attemptUpload(item: QueueItem): Promise<AttemptResult> {
   inFlight.add(item.id)
   try {
     try {
-      await saveNote(item.blob, item.filename)
+      await saveNote(item.blob, item.filename, item.id)
       await removeItem(item.id)
       return 'success'
     } catch (err) {
