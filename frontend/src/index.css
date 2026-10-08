@@ -348,6 +348,12 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.note-place {
+  margin-left: 0.6rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
 .note-preview {
   overflow: hidden;
   text-overflow: ellipsis;

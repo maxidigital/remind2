@@ -1,3 +1,5 @@
+import type { Coords } from './location'
+
 export interface MeResponse {
   authenticated: boolean
   email?: string
@@ -8,6 +10,7 @@ export interface NoteEntry {
   date: string
   text: string
   color: string
+  place: string // nombre del lugar donde se guardó; vacío si la nota no tiene ubicación
 }
 
 export interface SaveNoteResponse {
@@ -60,10 +63,19 @@ export class SaveNoteError extends Error {
 // idempotencia: si un envío llegó y se guardó pero la respuesta se perdió (iOS
 // corta conexiones al volver de background), el reintento con el mismo id
 // devuelve la nota ya guardada en vez de duplicarla.
-export async function saveNote(blob: Blob, filename: string, id: string): Promise<SaveNoteResponse> {
+export async function saveNote(
+  blob: Blob,
+  filename: string,
+  id: string,
+  coords?: Coords | null,
+): Promise<SaveNoteResponse> {
   const formData = new FormData()
   formData.append('audio', blob, filename)
   formData.append('id', id)
+  if (coords) {
+    formData.append('lat', String(coords.lat))
+    formData.append('lng', String(coords.lng))
+  }
 
   let res: Response
   try {
@@ -91,11 +103,11 @@ export async function saveNote(blob: Blob, filename: string, id: string): Promis
 
 // Nota escrita (Markdown). `id` cumple el mismo rol que en saveNote: reintentar
 // con el mismo id no duplica la nota.
-export async function saveTextNote(text: string, id: string): Promise<void> {
+export async function saveTextNote(text: string, id: string, coords?: Coords | null): Promise<void> {
   const res = await fetch('/api/notes/text', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, id }),
+    body: JSON.stringify({ text, id, lat: coords?.lat, lng: coords?.lng }),
   })
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}`)

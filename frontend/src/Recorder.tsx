@@ -3,6 +3,7 @@ import { saveNote, SaveNoteError } from './api'
 import { enqueue, newId, removeItem, markBlocked, markInFlight, clearInFlight } from './offlineQueue'
 import EmptyRecordingDialog from './EmptyRecordingDialog'
 import { AudioLevelMonitor } from './audioLevel'
+import { requestCoords, settleCoords, type Coords } from './location'
 import { useWakeLock } from './useWakeLock'
 
 type Status = 'idle' | 'recording' | 'saving' | 'error'
@@ -46,6 +47,7 @@ export default function Recorder({ onSaved, onWrite }: Props) {
   const streamRef = useRef<MediaStream | null>(null)
   const timerRef = useRef<number | null>(null)
   const audioLevelRef = useRef<AudioLevelMonitor | null>(null)
+  const coordsRef = useRef<Promise<Coords | null> | null>(null)
 
   useWakeLock(status === 'recording')
 
@@ -59,6 +61,9 @@ export default function Recorder({ onSaved, onWrite }: Props) {
       setError('No se pudo acceder al micrófono')
       return
     }
+
+    // Se pide al arrancar para que el GPS tenga toda la grabación para responder.
+    coordsRef.current = requestCoords()
 
     const mimeType = pickMimeType()
     const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream)
@@ -112,12 +117,13 @@ export default function Recorder({ onSaved, onWrite }: Props) {
     const blob = new Blob(chunksRef.current, { type: effectiveType })
     const ext = extensionFor(effectiveType)
     const filename = `recording.${ext}`
+    const coords = await settleCoords(coordsRef.current)
 
     // Se persiste en IndexedDB ANTES de intentar la red, para que una falla dura
     // a mitad de subida (o cerrar la pestaña) nunca pierda la grabación.
     let queueId: string | null = null
     try {
-      queueId = await enqueue(blob, filename)
+      queueId = await enqueue(blob, filename, coords)
     } catch {
       // IndexedDB no disponible (navegación privada, cuota, etc.) — degrada a
       // envío directo best-effort en vez de bloquear la grabación.
@@ -128,7 +134,7 @@ export default function Recorder({ onSaved, onWrite }: Props) {
     // ítem — si no, puede reenviarlo por su cuenta y la nota queda duplicada.
     if (queueId) markInFlight(queueId)
     try {
-      const result = await saveNote(blob, filename, queueId ?? newId())
+      const result = await saveNote(blob, filename, queueId ?? newId(), coords)
       if (queueId) await removeItem(queueId)
       if (result.text.trim()) {
         onSaved()

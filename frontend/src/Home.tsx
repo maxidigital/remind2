@@ -7,6 +7,7 @@ import Menu from './Menu'
 import AppSwitcher from './AppSwitcher'
 import { newId, startAutoRetry } from './offlineQueue'
 import RichTextEditor from './RichTextEditor'
+import { requestCoords, settleCoords, type Coords } from './location'
 
 interface Props {
   email: string
@@ -20,6 +21,13 @@ export default function Home({ email, onLoggedOut, onOpenBreathwork }: Props) {
   // Id de la nota escrita en curso: se fija al abrir el editor y se reusa en
   // cada intento de guardado, para que reintentar tras un error no la duplique.
   const [writingId, setWritingId] = useState<string | null>(null)
+  const writingCoordsRef = useRef<Promise<Coords | null> | null>(null)
+
+  function handleStartWriting() {
+    // Se pide al abrir el editor para que el GPS tenga tiempo mientras se escribe.
+    writingCoordsRef.current = requestCoords()
+    setWritingId(newId())
+  }
 
   useEffect(() => startAutoRetry(), [])
 
@@ -29,7 +37,7 @@ export default function Home({ email, onLoggedOut, onOpenBreathwork }: Props) {
 
   async function handleSaveWritten(markdown: string) {
     if (!writingId) return
-    await saveTextNote(markdown, writingId)
+    await saveTextNote(markdown, writingId, await settleCoords(writingCoordsRef.current))
     setWritingId(null)
     setRefreshKey((k) => k + 1)
   }
@@ -56,7 +64,7 @@ export default function Home({ email, onLoggedOut, onOpenBreathwork }: Props) {
         </PullToRefresh>
       </main>
 
-      <Recorder onSaved={() => setRefreshKey((k) => k + 1)} onWrite={() => setWritingId(newId())} />
+      <Recorder onSaved={() => setRefreshKey((k) => k + 1)} onWrite={handleStartWriting} />
 
       {writingId && (
         <RichTextEditor

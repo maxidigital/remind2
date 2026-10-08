@@ -223,6 +223,7 @@ export default function NoteCard({ note, expanded, onToggleExpand, onArchive, on
         {expanded ? (
           <>
             <span className="note-time">{time}</span>
+            {note.place && <span className="note-place">{note.place}</span>}
             <div className="note-full-text rich-text" dangerouslySetInnerHTML={html} />
           </>
         ) : (

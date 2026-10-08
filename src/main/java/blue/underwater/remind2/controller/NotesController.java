@@ -5,6 +5,7 @@ import blue.underwater.remind2.auth.SessionCookie;
 import blue.underwater.remind2.auth.UserCredentialsStore;
 import blue.underwater.remind2.drive.AudioDriveService;
 import blue.underwater.remind2.exception.UpstreamServiceException;
+import blue.underwater.remind2.geo.PlaceService;
 import blue.underwater.remind2.sheets.NotesSheetService;
 import blue.underwater.remind2.sheets.UserSpreadsheetService;
 import blue.underwater.remind2.transcription.WhisperTranscriptionService;
@@ -28,6 +29,7 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,6 +46,7 @@ public class NotesController {
     private final UserSpreadsheetService spreadsheetService;
     private final NotesSheetService sheetService;
     private final AudioDriveService audioDriveService;
+    private final PlaceService placeService;
     private final AccessLog accessLog;
 
     // userId + ":" + note id de los POST en curso. Un reintento que llega
@@ -57,6 +60,7 @@ public class NotesController {
                             UserSpreadsheetService spreadsheetService,
                             NotesSheetService sheetService,
                             AudioDriveService audioDriveService,
+                            PlaceService placeService,
                             AccessLog accessLog) {
         this.sessionCookie = sessionCookie;
         this.credentialsStore = credentialsStore;
@@ -64,6 +68,7 @@ public class NotesController {
         this.spreadsheetService = spreadsheetService;
         this.sheetService = sheetService;
         this.audioDriveService = audioDriveService;
+        this.placeService = placeService;
         this.accessLog = accessLog;
     }
 
@@ -89,6 +94,8 @@ public class NotesController {
     @PostMapping
     public Map<String, String> saveNote(@RequestParam("audio") MultipartFile audio,
                                          @RequestParam(value = "id", required = false) String noteId,
+                                         @RequestParam(value = "lat", required = false) Double lat,
+                                         @RequestParam(value = "lng", required = false) Double lng,
                                          @CookieValue(name = SessionCookie.COOKIE_NAME, required = false) String authCookie,
                                          HttpServletResponse response) throws IOException, GeneralSecurityException {
         AuthenticatedUser user = requireUser(authCookie, response);
@@ -96,7 +103,7 @@ public class NotesController {
             return null;
         }
 
-        return saveOnce(user, noteId, response, id -> createNote(user, audio, id));
+        return saveOnce(user, noteId, response, id -> createNote(user, audio, id, lat, lng));
     }
 
     @PostMapping("/text")
@@ -113,7 +120,9 @@ public class NotesController {
             return null;
         }
 
-        return saveOnce(user, body.get("id"), response, id -> createTextNote(user, text.strip(), id));
+        Double lat = parseCoordinate(body.get("lat"));
+        Double lng = parseCoordinate(body.get("lng"));
+        return saveOnce(user, body.get("id"), response, id -> createTextNote(user, text.strip(), id, lat, lng));
     }
 
     @FunctionalInterface
@@ -155,11 +164,38 @@ public class NotesController {
         }
     }
 
-    private Map<String, String> createTextNote(AuthenticatedUser user, String text, String noteId) {
+    private static Double parseCoordinate(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Double.valueOf(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Contenido de la columna Location: el nombre del lugar seguido de las
+     * coordenadas entre paréntesis, solo las coordenadas si no se pudo
+     * averiguar el lugar, o vacío si la nota vino sin ubicación (opción
+     * apagada en el menú, permiso denegado o GPS sin señal).
+     */
+    private String describeLocation(Double lat, Double lng) {
+        if (lat == null || lng == null || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+            return "";
+        }
+        String coordinates = String.format(Locale.ROOT, "(%.5f, %.5f)", lat, lng);
+        String place = placeService.describe(lat, lng);
+        return place == null ? coordinates : place + " " + coordinates;
+    }
+
+    private Map<String, String> createTextNote(AuthenticatedUser user, String text, String noteId, Double lat, Double lng) {
+        String location = describeLocation(lat, lng);
         String spreadsheetId;
         try {
             spreadsheetId = spreadsheetService.getOrCreateSpreadsheetId(user.userId(), user.credential());
-            sheetService.append(spreadsheetId, user.credential(), text, Instant.now(), noteId);
+            sheetService.append(spreadsheetId, user.credential(), text, Instant.now(), noteId, location);
         } catch (Exception e) {
             log.error("Saving text note to spreadsheet failed for user {}: {}", user.userId(), e.toString(), e);
             throw new UpstreamServiceException("SHEETS_FAILED", e);
@@ -169,7 +205,8 @@ public class NotesController {
         return Map.of("text", text, "spreadsheetUrl", buildSpreadsheetUrl(spreadsheetId));
     }
 
-    private Map<String, String> createNote(AuthenticatedUser user, MultipartFile audio, String noteId) throws IOException {
+    private Map<String, String> createNote(AuthenticatedUser user, MultipartFile audio, String noteId,
+                                           Double lat, Double lng) throws IOException {
         // Leído antes de transcribir: transferTo() de Whisper puede mover el
         // archivo temporal del multipart y dejar el stream inutilizable.
         byte[] audioBytes = audio.getBytes();
@@ -186,11 +223,12 @@ public class NotesController {
             return Map.of("text", "");
         }
 
+        String location = describeLocation(lat, lng);
         Instant createdAt = Instant.now();
         String spreadsheetId;
         try {
             spreadsheetId = spreadsheetService.getOrCreateSpreadsheetId(user.userId(), user.credential());
-            sheetService.append(spreadsheetId, user.credential(), text, createdAt, noteId);
+            sheetService.append(spreadsheetId, user.credential(), text, createdAt, noteId, location);
         } catch (Exception e) {
             log.error("Saving note to spreadsheet failed for user {}: {}", user.userId(), e.toString(), e);
             throw new UpstreamServiceException("SHEETS_FAILED", e);

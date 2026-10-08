@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import AboutDialog from './AboutDialog'
 import { fetchSpreadsheetUrl } from './api'
+import { isLocationEnabled, setLocationEnabled } from './location'
 
 type Theme = 'light' | 'dark'
 
@@ -21,6 +22,7 @@ export default function Menu({ email, onLogout }: Props) {
   const [open, setOpen] = useState(false)
   const [aboutOpen, setAboutOpen] = useState(false)
   const [theme, setTheme] = useState<Theme>(getInitialTheme)
+  const [locationOn, setLocationOn] = useState(isLocationEnabled)
   const [spreadsheetLoading, setSpreadsheetLoading] = useState(false)
   const [spreadsheetUrl, setSpreadsheetUrl] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -103,6 +105,15 @@ export default function Menu({ email, onLogout }: Props) {
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           >
             {theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+          </button>
+          <button
+            className="menu-item"
+            onClick={() => {
+              setLocationEnabled(!locationOn)
+              setLocationOn(!locationOn)
+            }}
+          >
+            {locationOn ? 'No guardar ubicación' : 'Guardar ubicación'}
           </button>
           <button className="menu-item" onClick={handleOpenSpreadsheet} disabled={spreadsheetLoading}>
             Abrir planilla

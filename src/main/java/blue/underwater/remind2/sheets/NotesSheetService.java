@@ -14,13 +14,18 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Adapted from re.mind's EntriesBookSheetAdmin, but using values().append()
  * instead of a manually tracked lastRow/COUNTA formula, and with a read
  * path (readAll) for the notes list.
  *
- * Columns: A = Id, B = Date, C = Text, D = Status, E = Color (sheets created
+ * Columns: A = Id, B = Date, C = Text, D = Status, E = Color, F = Location
+ * ("Ebertstraße, Mitte, Berlín (52.51630, 13.37770)", or just the
+ * parenthesized coordinates when the place name couldn't be resolved; empty
+ * for notes saved without location). (Sheets created
  * with the older Date/Text/Status/Color/Id order are migrated by
  * UserSpreadsheetService before they get here).
  *
@@ -38,14 +43,18 @@ public class NotesSheetService {
     private static final String STATUS_ARCHIVED = "archived";
     private static final String STATUS_DELETED = "deleted";
 
-    public record NoteEntry(int row, String date, String text, String color) {
+    public record NoteEntry(int row, String date, String text, String color, String place) {
     }
+
+    // Trailing "(lat, lng)" of the Location cell; what precedes it is the place name.
+    private static final Pattern LOCATION_COORDINATES = Pattern.compile("\\s*\\((-?\\d+\\.\\d+, -?\\d+\\.\\d+)\\)$");
 
     /**
      * Column A holds the client's note id (idempotency key), so a retry of a
      * note that was already saved can be recognized — see findTextById.
      */
-    public void append(String spreadsheetId, Credential credential, String text, Instant createdAt, String noteId)
+    public void append(String spreadsheetId, Credential credential, String text, Instant createdAt, String noteId,
+                       String location)
             throws IOException, GeneralSecurityException {
         Sheets sheets = buildSheetsClient(credential);
 
@@ -53,10 +62,10 @@ public class NotesSheetService {
         // `new Date(...)` needs an explicit UTC marker or it misreads the
         // string as browser-local time and shows the wrong hour.
         ValueRange row = new ValueRange().setValues(
-                List.of(List.of(noteId, createdAt.toString(), text)));
+                List.of(List.of(noteId, createdAt.toString(), text, "", "", location)));
 
         sheets.spreadsheets().values()
-                .append(spreadsheetId, "A:C", row)
+                .append(spreadsheetId, "A:F", row)
                 .setValueInputOption("RAW")
                 .execute();
     }
@@ -87,7 +96,7 @@ public class NotesSheetService {
         Sheets sheets = buildSheetsClient(credential);
 
         ValueRange result = sheets.spreadsheets().values()
-                .get(spreadsheetId, "A:E")
+                .get(spreadsheetId, "A:F")
                 .execute();
 
         List<List<Object>> rows = result.getValues();
@@ -106,12 +115,23 @@ public class NotesSheetService {
             String date = row.size() > 1 ? String.valueOf(row.get(1)) : "";
             String text = row.size() > 2 ? String.valueOf(row.get(2)) : "";
             String color = row.size() > 4 ? String.valueOf(row.get(4)) : "";
+            String location = row.size() > 5 ? String.valueOf(row.get(5)) : "";
             int sheetRow = i + 1; // 1-indexed sheet row; header occupies row 1
-            entries.add(new NoteEntry(sheetRow, date, text, color));
+            entries.add(new NoteEntry(sheetRow, date, text, color, placeOf(location)));
         }
 
         Collections.reverse(entries);
         return entries;
+    }
+
+    /** What the app shows for a Location cell: the place name, or the bare coordinates if there is none. */
+    private static String placeOf(String location) {
+        Matcher coordinates = LOCATION_COORDINATES.matcher(location);
+        if (!coordinates.find()) {
+            return location.strip();
+        }
+        String name = location.substring(0, coordinates.start()).strip();
+        return name.isEmpty() ? coordinates.group(1) : name;
     }
 
     public void updateText(String spreadsheetId, Credential credential, int row, String text)

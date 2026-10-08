@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { saveNote, SaveNoteError } from './api'
+import type { Coords } from './location'
 
 export interface QueueItem {
   id: string
   blob: Blob
   filename: string
   createdAt: number
+  coords?: Coords | null // dónde se grabó; se guarda acá para que un reintento posterior la conserve
   attemptCount: number
   lastError?: string
   lastAttemptAt?: number
@@ -65,12 +67,13 @@ async function withStore<T>(mode: IDBTransactionMode, fn: (store: IDBObjectStore
   })
 }
 
-export async function enqueue(blob: Blob, filename: string): Promise<string> {
+export async function enqueue(blob: Blob, filename: string, coords?: Coords | null): Promise<string> {
   const id = newId()
   const item: QueueItem = {
     id,
     blob,
     filename,
+    coords,
     createdAt: Date.now(),
     attemptCount: 0,
     status: 'pending',
@@ -163,7 +166,7 @@ export async function attemptUpload(item: QueueItem): Promise<AttemptResult> {
   inFlight.add(item.id)
   try {
     try {
-      await saveNote(item.blob, item.filename, item.id)
+      await saveNote(item.blob, item.filename, item.id, item.coords)
       await removeItem(item.id)
       return 'success'
     } catch (err) {

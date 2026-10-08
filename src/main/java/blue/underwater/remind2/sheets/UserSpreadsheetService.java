@@ -36,7 +36,7 @@ public class UserSpreadsheetService {
     private static final Logger log = LoggerFactory.getLogger(UserSpreadsheetService.class);
 
     private static final String SPREADSHEET_NAME = "re.mind2";
-    private static final List<Object> HEADER = List.of("Id", "Date", "Text", "Status", "Color");
+    private static final List<Object> HEADER = List.of("Id", "Date", "Text", "Status", "Color", "Location");
     // Primera celda del encabezado del orden anterior (Date, Text, Status, Color, Id).
     private static final String LEGACY_FIRST_HEADER = "Date";
 
@@ -141,7 +141,7 @@ public class UserSpreadsheetService {
         log.info("Migrated spreadsheet {} to the Id-first column layout", spreadsheetId);
 
         sheets.spreadsheets().values()
-                .update(spreadsheetId, "A1:E1", new ValueRange().setValues(List.of(HEADER)))
+                .update(spreadsheetId, "A1:F1", new ValueRange().setValues(List.of(HEADER)))
                 .setValueInputOption("RAW")
                 .execute();
     }
@@ -153,7 +153,7 @@ public class UserSpreadsheetService {
 
         ValueRange header = new ValueRange().setValues(List.of(HEADER));
         sheets.spreadsheets().values()
-                .update(spreadsheetId, "A1:E1", header)
+                .update(spreadsheetId, "A1:F1", header)
                 .setValueInputOption("RAW")
                 .execute();
     }
