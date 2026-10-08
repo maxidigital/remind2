@@ -96,9 +96,40 @@ public class NotesController {
             return null;
         }
 
+        return saveOnce(user, noteId, response, id -> createNote(user, audio, id));
+    }
+
+    @PostMapping("/text")
+    public Map<String, String> saveTextNote(@RequestBody Map<String, String> body,
+                                             @CookieValue(name = SessionCookie.COOKIE_NAME, required = false) String authCookie,
+                                             HttpServletResponse response) throws IOException, GeneralSecurityException {
+        AuthenticatedUser user = requireUser(authCookie, response);
+        if (user == null) {
+            return null;
+        }
+        String text = body.get("text");
+        if (text == null || text.isBlank()) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return null;
+        }
+
+        return saveOnce(user, body.get("id"), response, id -> createTextNote(user, text.strip(), id));
+    }
+
+    @FunctionalInterface
+    private interface NoteCreator {
+        Map<String, String> create(String noteId) throws IOException;
+    }
+
+    /**
+     * Corre {@code creator} a lo sumo una vez por id de nota del cliente
+     * (compartido por notas de audio y escritas).
+     */
+    private Map<String, String> saveOnce(AuthenticatedUser user, String noteId, HttpServletResponse response,
+                                          NoteCreator creator) throws IOException, GeneralSecurityException {
         // Clientes viejos (cacheados de antes de la idempotencia) no mandan id.
         if (noteId == null || noteId.isBlank()) {
-            return createNote(user, audio, "");
+            return creator.create("");
         }
 
         String progressKey = user.userId() + ":" + noteId;
@@ -118,10 +149,24 @@ public class NotesController {
                     return Map.of("text", existingText, "spreadsheetUrl", buildSpreadsheetUrl(spreadsheetId));
                 }
             }
-            return createNote(user, audio, noteId);
+            return creator.create(noteId);
         } finally {
             notesInProgress.remove(progressKey);
         }
+    }
+
+    private Map<String, String> createTextNote(AuthenticatedUser user, String text, String noteId) {
+        String spreadsheetId;
+        try {
+            spreadsheetId = spreadsheetService.getOrCreateSpreadsheetId(user.userId(), user.credential());
+            sheetService.append(spreadsheetId, user.credential(), text, Instant.now(), noteId);
+        } catch (Exception e) {
+            log.error("Saving text note to spreadsheet failed for user {}: {}", user.userId(), e.toString(), e);
+            throw new UpstreamServiceException("SHEETS_FAILED", e);
+        }
+
+        accessLog.record(user.email(), "note.create", Map.of("kind", "text"));
+        return Map.of("text", text, "spreadsheetUrl", buildSpreadsheetUrl(spreadsheetId));
     }
 
     private Map<String, String> createNote(AuthenticatedUser user, MultipartFile audio, String noteId) throws IOException {

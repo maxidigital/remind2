@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { NoteEntry } from './api'
 import ConfirmDialog from './ConfirmDialog'
 import { NOTE_COLORS } from './colors'
 import { formatTime } from './time'
+import RichTextEditor from './RichTextEditor'
+import { markdownToHtml, markdownToPlain } from './richText'
 
 const RIGHT_SWIPE_THRESHOLD = 160 // swipe right abre el menú contextual (Compartir/Editar/Copiar)
 const RIGHT_ACTIONS_WIDTH = 160 // swipe left reveals: Archivar, Eliminar
@@ -32,7 +34,6 @@ interface DragState {
 
 export default function NoteCard({ note, expanded, onToggleExpand, onArchive, onDelete, onEdit, onColorChange }: Props) {
   const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(note.text)
   const [offset, setOffset] = useState(0)
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null)
   const [confirmAction, setConfirmAction] = useState<'archive' | 'delete' | null>(null)
@@ -41,6 +42,9 @@ export default function NoteCard({ note, expanded, onToggleExpand, onArchive, on
   const wrapperRef = useRef<HTMLLIElement>(null)
   const menuOpenedAt = useRef(0)
   const time = formatTime(note.date)
+  const plainText = useMemo(() => markdownToPlain(note.text), [note.text])
+  // Seguro para innerHTML: markdownToHtml escapa todo y solo emite sus propios tags.
+  const html = useMemo(() => ({ __html: markdownToHtml(note.text) }), [note.text])
 
   // Al soltar el dedo tras un long-press, el navegador puede sintetizar un
   // "click" fantasma sobre lo que haya quedado bajo el punto de contacto
@@ -142,7 +146,7 @@ export default function NoteCard({ note, expanded, onToggleExpand, onArchive, on
 
   async function handleCopy() {
     try {
-      await navigator.clipboard.writeText(note.text)
+      await navigator.clipboard.writeText(plainText)
     } catch {
       // ignore
     }
@@ -152,13 +156,13 @@ export default function NoteCard({ note, expanded, onToggleExpand, onArchive, on
   async function handleShare() {
     if (navigator.share) {
       try {
-        await navigator.share({ text: note.text })
+        await navigator.share({ text: plainText })
       } catch {
         // user cancelled — nothing to do
       }
     } else {
       try {
-        await navigator.clipboard.writeText(note.text)
+        await navigator.clipboard.writeText(plainText)
       } catch {
         // ignore
       }
@@ -168,14 +172,12 @@ export default function NoteCard({ note, expanded, onToggleExpand, onArchive, on
 
   function startEdit() {
     setOffset(0)
-    setDraft(note.text)
     setEditing(true)
   }
 
-  function saveEdit() {
-    const trimmed = draft.trim()
-    if (trimmed && trimmed !== note.text) {
-      onEdit(note.row, trimmed)
+  function saveEdit(markdown: string) {
+    if (markdown !== note.text) {
+      onEdit(note.row, markdown)
     }
     setEditing(false)
   }
@@ -218,36 +220,27 @@ export default function NoteCard({ note, expanded, onToggleExpand, onArchive, on
         onPointerCancel={handlePointerUp}
         onContextMenu={handleContextMenu}
       >
-        {editing ? (
-          <div className="note-edit">
-            <textarea
-              className="note-edit-textarea"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              rows={3}
-              autoFocus
-            />
-            <div className="note-edit-buttons">
-              <button className="note-edit-cancel" onClick={() => setEditing(false)}>
-                Cancelar
-              </button>
-              <button className="note-edit-save" onClick={saveEdit}>
-                Guardar
-              </button>
-            </div>
-          </div>
-        ) : expanded ? (
+        {expanded ? (
           <>
             <span className="note-time">{time}</span>
-            <p className="note-full-text">{note.text}</p>
+            <div className="note-full-text rich-text" dangerouslySetInnerHTML={html} />
           </>
         ) : (
           <div className="note-line">
             <span className="note-time">{time}</span>
-            <span className="note-preview">{note.text}</span>
+            <span className="note-preview">{plainText}</span>
           </div>
         )}
       </div>
+
+      {editing && (
+        <RichTextEditor
+          title="Editar nota"
+          initialMarkdown={note.text}
+          onSave={saveEdit}
+          onCancel={() => setEditing(false)}
+        />
+      )}
 
       {menuPos && (
         <>

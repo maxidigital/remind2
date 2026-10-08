@@ -33,9 +33,10 @@ function formatDuration(totalSeconds: number): string {
 
 interface Props {
   onSaved: () => void
+  onWrite: () => void
 }
 
-export default function Recorder({ onSaved }: Props) {
+export default function Recorder({ onSaved, onWrite }: Props) {
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState<string | null>(null)
   const [showEmpty, setShowEmpty] = useState(false)
@@ -176,7 +177,13 @@ export default function Recorder({ onSaved }: Props) {
     <div className="recorder">
       {error && <p className="recorder-error">{error}</p>}
       <div className="recorder-row">
-        <span className="recorder-listening">{status === 'recording' && 'Escuchando'}</span>
+        {status === 'recording' ? (
+          <span className="recorder-listening">Escuchando</span>
+        ) : (
+          <button className="write-button" onClick={onWrite} disabled={status === 'saving'} aria-label="Escribir nota">
+            <PencilIcon />
+          </button>
+        )}
         <button
           className={`record-button record-button--${status}`}
           onClick={handleClick}
@@ -190,6 +197,15 @@ export default function Recorder({ onSaved }: Props) {
       <span className="recorder-label">{status === 'error' && 'Tocá para reintentar'}</span>
       {showEmpty && <EmptyRecordingDialog onClose={() => setShowEmpty(false)} />}
     </div>
+  )
+}
+
+function PencilIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
   )
 }
 

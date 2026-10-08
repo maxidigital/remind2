@@ -20,7 +20,10 @@ export default function PullToRefresh({ onRefresh, children }: Props) {
 
   useEffect(() => {
     function onTouchStart(e: TouchEvent) {
-      if (refreshingRef.current || window.scrollY > 0) {
+      // El editor de notas es un overlay sobre la lista: arrastrar ahí adentro
+      // es scrollear/seleccionar texto, no tirar de la lista.
+      const inEditor = e.target instanceof Element && e.target.closest('.editor-overlay') !== null
+      if (refreshingRef.current || window.scrollY > 0 || inEditor) {
         startY.current = null
         return
       }

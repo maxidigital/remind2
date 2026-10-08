@@ -89,6 +89,19 @@ export async function saveNote(blob: Blob, filename: string, id: string): Promis
   return res.json()
 }
 
+// Nota escrita (Markdown). `id` cumple el mismo rol que en saveNote: reintentar
+// con el mismo id no duplica la nota.
+export async function saveTextNote(text: string, id: string): Promise<void> {
+  const res = await fetch('/api/notes/text', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, id }),
+  })
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`)
+  }
+}
+
 export async function updateNote(row: number, text: string): Promise<void> {
   const res = await fetch(`/api/notes/${row}`, {
     method: 'PUT',
