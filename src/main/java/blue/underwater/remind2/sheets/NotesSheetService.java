@@ -20,7 +20,11 @@ import java.util.List;
  * instead of a manually tracked lastRow/COUNTA formula, and with a read
  * path (readAll) for the notes list.
  *
- * Column C holds a soft-delete status ("archived"/"deleted"). Archiving and
+ * Columns: A = Id, B = Date, C = Text, D = Status, E = Color (sheets created
+ * with the older Date/Text/Status/Color/Id order are migrated by
+ * UserSpreadsheetService before they get here).
+ *
+ * Column D holds a soft-delete status ("archived"/"deleted"). Archiving and
  * deleting both just set this column instead of touching row indices in the
  * sheet — physically removing a row (batchUpdate deleteDimension) would
  * shift every row after it, and two quick actions in the app could then
@@ -38,7 +42,7 @@ public class NotesSheetService {
     }
 
     /**
-     * Column E holds the client's note id (idempotency key), so a retry of a
+     * Column A holds the client's note id (idempotency key), so a retry of a
      * note that was already saved can be recognized — see findTextById.
      */
     public void append(String spreadsheetId, Credential credential, String text, Instant createdAt, String noteId)
@@ -49,10 +53,10 @@ public class NotesSheetService {
         // `new Date(...)` needs an explicit UTC marker or it misreads the
         // string as browser-local time and shows the wrong hour.
         ValueRange row = new ValueRange().setValues(
-                List.of(List.of(createdAt.toString(), text, "", "", noteId)));
+                List.of(List.of(noteId, createdAt.toString(), text)));
 
         sheets.spreadsheets().values()
-                .append(spreadsheetId, "A:E", row)
+                .append(spreadsheetId, "A:C", row)
                 .setValueInputOption("RAW")
                 .execute();
     }
@@ -63,7 +67,7 @@ public class NotesSheetService {
         Sheets sheets = buildSheetsClient(credential);
 
         List<List<Object>> rows = sheets.spreadsheets().values()
-                .get(spreadsheetId, "A:E")
+                .get(spreadsheetId, "A:C")
                 .execute()
                 .getValues();
         if (rows == null) {
@@ -71,8 +75,8 @@ public class NotesSheetService {
         }
         for (int i = rows.size() - 1; i >= 1; i--) {
             List<Object> row = rows.get(i);
-            if (row.size() > 4 && noteId.equals(String.valueOf(row.get(4)))) {
-                return row.size() > 1 ? String.valueOf(row.get(1)) : "";
+            if (!row.isEmpty() && noteId.equals(String.valueOf(row.get(0)))) {
+                return row.size() > 2 ? String.valueOf(row.get(2)) : "";
             }
         }
         return null;
@@ -83,7 +87,7 @@ public class NotesSheetService {
         Sheets sheets = buildSheetsClient(credential);
 
         ValueRange result = sheets.spreadsheets().values()
-                .get(spreadsheetId, "A:D")
+                .get(spreadsheetId, "A:E")
                 .execute();
 
         List<List<Object>> rows = result.getValues();
@@ -94,14 +98,14 @@ public class NotesSheetService {
         List<NoteEntry> entries = new ArrayList<>();
         for (int i = 1; i < rows.size(); i++) {
             List<Object> row = rows.get(i);
-            String status = row.size() > 2 ? String.valueOf(row.get(2)) : "";
+            String status = row.size() > 3 ? String.valueOf(row.get(3)) : "";
             if (STATUS_ARCHIVED.equals(status) || STATUS_DELETED.equals(status)) {
                 continue;
             }
 
-            String date = row.size() > 0 ? String.valueOf(row.get(0)) : "";
-            String text = row.size() > 1 ? String.valueOf(row.get(1)) : "";
-            String color = row.size() > 3 ? String.valueOf(row.get(3)) : "";
+            String date = row.size() > 1 ? String.valueOf(row.get(1)) : "";
+            String text = row.size() > 2 ? String.valueOf(row.get(2)) : "";
+            String color = row.size() > 4 ? String.valueOf(row.get(4)) : "";
             int sheetRow = i + 1; // 1-indexed sheet row; header occupies row 1
             entries.add(new NoteEntry(sheetRow, date, text, color));
         }
@@ -116,7 +120,7 @@ public class NotesSheetService {
 
         ValueRange value = new ValueRange().setValues(List.of(List.of(text)));
         sheets.spreadsheets().values()
-                .update(spreadsheetId, "B" + row, value)
+                .update(spreadsheetId, "C" + row, value)
                 .setValueInputOption("RAW")
                 .execute();
     }
@@ -127,7 +131,7 @@ public class NotesSheetService {
 
         ValueRange value = new ValueRange().setValues(List.of(List.of(color)));
         sheets.spreadsheets().values()
-                .update(spreadsheetId, "D" + row, value)
+                .update(spreadsheetId, "E" + row, value)
                 .setValueInputOption("RAW")
                 .execute();
     }
@@ -146,7 +150,7 @@ public class NotesSheetService {
 
         ValueRange value = new ValueRange().setValues(List.of(List.of(status)));
         sheets.spreadsheets().values()
-                .update(spreadsheetId, "C" + row, value)
+                .update(spreadsheetId, "D" + row, value)
                 .setValueInputOption("RAW")
                 .execute();
     }
