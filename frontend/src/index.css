@@ -95,7 +95,9 @@ body {
 }
 
 .app {
-  max-width: 480px;
+  /* En teléfono manda el ancho de pantalla; en desktop las notas se leen
+     mejor con una columna más ancha que la de un teléfono. */
+  max-width: 760px;
   margin: 0 auto;
   min-height: 100dvh;
   display: flex;
@@ -371,6 +373,26 @@ body {
    con el estilo de segundo nivel (círculo hueco). */
 .rich-text ul {
   list-style: disc;
+}
+
+.rich-text h1,
+.rich-text h2 {
+  margin: 0.5rem 0 0.2rem;
+  line-height: 1.25;
+}
+
+.rich-text h1 {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.rich-text h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.rich-text > :first-child {
+  margin-top: 0;
 }
 
 .rich-text li {
@@ -840,7 +862,7 @@ body {
 /* Mismo ancho máximo que el resto de la app en pantallas grandes. */
 .editor-overlay > :not(.confirm-backdrop) {
   width: 100%;
-  max-width: 480px;
+  max-width: 760px;
   margin-inline: auto;
 }
 
@@ -885,6 +907,7 @@ body {
 
 .editor-toolbar {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.4rem;
   padding: 0.5rem 1rem;
   border-bottom: 1px solid var(--border);
@@ -902,6 +925,16 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
+}
+
+.editor-tool-h1 {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.editor-tool-h2 {
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 
 .editor-tool--active {

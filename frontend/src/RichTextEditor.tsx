@@ -3,15 +3,57 @@ import { createPortal } from 'react-dom'
 import ConfirmDialog from './ConfirmDialog'
 import { domToMarkdown, markdownToHtml } from './richText'
 
-type Command = 'bold' | 'italic' | 'strikeThrough' | 'insertUnorderedList' | 'insertOrderedList'
+interface Tool {
+  id: string
+  label: string
+  content: React.ReactNode
+  isActive: () => boolean
+  run: () => void
+}
 
-const COMMANDS: { command: Command; label: string; content: React.ReactNode }[] = [
-  { command: 'bold', label: 'Negrita', content: <b>B</b> },
-  { command: 'italic', label: 'Cursiva', content: <i>I</i> },
-  { command: 'strikeThrough', label: 'Tachado', content: <s>S</s> },
-  { command: 'insertUnorderedList', label: 'Lista con viñetas', content: <BulletListIcon /> },
-  { command: 'insertOrderedList', label: 'Lista numerada', content: <NumberedListIcon /> },
+function inHeading(): boolean {
+  return /^h[1-6]$/i.test(document.queryCommandValue('formatBlock'))
+}
+
+// Formato de caracteres y listas: comandos que el navegador prende y apaga solo.
+function toggleTool(command: string, label: string, content: React.ReactNode): Tool {
+  return {
+    id: command,
+    label,
+    content,
+    // Un título ya se ve en negrita: sin el chequeo, el botón B aparecería
+    // prendido en todos los títulos aunque nadie haya aplicado negrita.
+    isActive: () => document.queryCommandState(command) && !(command === 'bold' && inHeading()),
+    run: () => document.execCommand(command),
+  }
+}
+
+// Títulos: formatBlock no se apaga solo, así que tocar el botón del título
+// que ya está puesto vuelve la línea a texto normal.
+function headingTool(tag: 'h1' | 'h2', label: string, content: React.ReactNode): Tool {
+  const isActive = () => document.queryCommandValue('formatBlock').toLowerCase() === tag
+  return {
+    id: tag,
+    label,
+    content,
+    isActive,
+    run: () => document.execCommand('formatBlock', false, isActive() ? 'div' : tag),
+  }
+}
+
+const TOOLS: Tool[] = [
+  headingTool('h1', 'Título', <span className="editor-tool-h1">T</span>),
+  headingTool('h2', 'Subtítulo', <span className="editor-tool-h2">T</span>),
+  toggleTool('bold', 'Negrita', <b>B</b>),
+  toggleTool('italic', 'Cursiva', <i>I</i>),
+  toggleTool('strikeThrough', 'Tachado', <s>S</s>),
+  toggleTool('insertUnorderedList', 'Lista con viñetas', <BulletListIcon />),
+  toggleTool('insertOrderedList', 'Lista numerada', <NumberedListIcon />),
 ]
+
+function activeTools(): Set<string> {
+  return new Set(TOOLS.filter((tool) => tool.isActive()).map((tool) => tool.id))
+}
 
 interface Props {
   title: string
@@ -27,7 +69,7 @@ export default function RichTextEditor({ title, initialMarkdown, onSave, onCance
   // initialMarkdown tal como lo devuelve el editor sin tocar nada, para saber
   // si hay cambios que descartar (domToMarkdown normaliza espacios).
   const untouchedRef = useRef(initialMarkdown)
-  const [active, setActive] = useState<Set<Command>>(new Set())
+  const [active, setActive] = useState<Set<string>>(new Set())
   const [markdown, setMarkdown] = useState(initialMarkdown)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -61,7 +103,7 @@ export default function RichTextEditor({ title, initialMarkdown, onSave, onCance
       const editor = editorRef.current
       const anchor = window.getSelection()?.anchorNode
       if (!editor || !anchor || !editor.contains(anchor)) return
-      setActive(new Set(COMMANDS.map((c) => c.command).filter((command) => document.queryCommandState(command))))
+      setActive(activeTools())
     }
     document.addEventListener('selectionchange', refreshActive)
     return () => document.removeEventListener('selectionchange', refreshActive)
@@ -93,16 +135,11 @@ export default function RichTextEditor({ title, initialMarkdown, onSave, onCance
     return editorRef.current ? domToMarkdown(editorRef.current) : ''
   }
 
-  function runCommand(command: Command) {
+  function runTool(tool: Tool) {
     editorRef.current?.focus()
-    document.execCommand(command)
+    tool.run()
     setMarkdown(readMarkdown())
-    setActive((prev) => {
-      const next = new Set(prev)
-      if (document.queryCommandState(command)) next.add(command)
-      else next.delete(command)
-      return next
-    })
+    setActive(activeTools())
   }
 
   // Pegar desde otra app trae HTML con estilos ajenos (fuentes, colores,
@@ -145,19 +182,19 @@ export default function RichTextEditor({ title, initialMarkdown, onSave, onCance
       </header>
 
       <div className="editor-toolbar">
-        {COMMANDS.map(({ command, label, content }) => (
+        {TOOLS.map((tool) => (
           <button
-            key={command}
-            className={`editor-tool${active.has(command) ? ' editor-tool--active' : ''}`}
-            aria-label={label}
-            aria-pressed={active.has(command)}
+            key={tool.id}
+            className={`editor-tool${active.has(tool.id) ? ' editor-tool--active' : ''}`}
+            aria-label={tool.label}
+            aria-pressed={active.has(tool.id)}
             // Sin esto el toque le saca el foco (y la selección) al editor
             // antes de que llegue el click, y el comando no tiene a qué aplicarse.
             onPointerDown={(e) => e.preventDefault()}
             onMouseDown={(e) => e.preventDefault()}
-            onClick={() => runCommand(command)}
+            onClick={() => runTool(tool)}
           >
-            {content}
+            {tool.content}
           </button>
         ))}
       </div>

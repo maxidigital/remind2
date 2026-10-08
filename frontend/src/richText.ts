@@ -1,7 +1,7 @@
 // El formato de una nota se guarda como Markdown en la celda Text de la
 // planilla (legible ahí, y las notas de audio —texto plano— son Markdown
 // válido sin tocar nada). Subconjunto soportado: **negrita**, *cursiva*,
-// ~~tachado~~, listas "- " y "1. ". Nada de HTML: todo lo que no sea uno de
+// ~~tachado~~, listas "- " y "1. ", títulos "# " y subtítulos "## ". Nada de HTML: todo lo que no sea uno de
 // esos marcadores se escapa, así que el resultado de markdownToHtml es seguro
 // para innerHTML.
 
@@ -10,6 +10,8 @@ const STRIKE = /~~(\S(?:.*?\S)?)~~/g
 const ITALIC = /\*(\S(?:[^*]*\S)?)\*/g
 const BULLET_ITEM = /^\s*-\s+(.*)$/
 const NUMBERED_ITEM = /^\s*\d{1,3}\.\s+(.*)$/
+// "#" = título (<h1>), "##" o más = subtítulo (<h2>): dos niveles alcanzan para una nota.
+const HEADING = /^(#{1,6})\s+(.*)$/
 
 function escapeHtml(text: string): string {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -30,6 +32,13 @@ export function markdownToHtml(markdown: string): string {
   }
 
   for (const line of markdown.split('\n')) {
+    const heading = HEADING.exec(line)
+    if (heading) {
+      closeList()
+      const tag = heading[1].length === 1 ? 'h1' : 'h2'
+      out.push(`<${tag}>${inlineToHtml(heading[2])}</${tag}>`)
+      continue
+    }
     const bullet = BULLET_ITEM.exec(line)
     const numbered = bullet ? null : NUMBERED_ITEM.exec(line)
     const list = bullet ? 'ul' : numbered ? 'ol' : null
@@ -54,8 +63,9 @@ export function markdownToPlain(markdown: string): string {
   return markdown
     .split('\n')
     .map((line) => {
+      const heading = HEADING.exec(line)
       const bullet = BULLET_ITEM.exec(line)
-      const text = bullet ? `• ${bullet[1]}` : line
+      const text = heading ? heading[2] : bullet ? `• ${bullet[1]}` : line
       return text.replace(BOLD, '$1').replace(STRIKE, '$1').replace(ITALIC, '$1')
     })
     .join('\n')
@@ -94,7 +104,8 @@ function inlineToMarkdown(node: Node): string {
   return text
 }
 
-const BLOCK_TAGS = new Set(['DIV', 'P', 'UL', 'OL', 'LI'])
+const HEADING_PREFIX: Record<string, string> = { H1: '# ', H2: '## ', H3: '## ', H4: '## ', H5: '## ', H6: '## ' }
+const BLOCK_TAGS = new Set(['DIV', 'P', 'UL', 'OL', 'LI', ...Object.keys(HEADING_PREFIX)])
 
 function collectLines(root: Node, lines: string[]): void {
   let buffer: string | null = null
@@ -113,6 +124,11 @@ function collectLines(root: Node, lines: string[]): void {
         const text = inlineToMarkdown(item).replace(/\n+/g, ' ').trim()
         lines.push(child.tagName === 'UL' ? `- ${text}` : `${n}. ${text}`)
       }
+    } else if (child instanceof HTMLElement && child.tagName in HEADING_PREFIX) {
+      flush()
+      const text = inlineToMarkdown(child).replace(/\n+/g, ' ').trim()
+      // Un título vacío (recién creado, sin texto) no se guarda como "# " suelto.
+      lines.push(text ? HEADING_PREFIX[child.tagName] + text : '')
     } else if (child instanceof HTMLElement && BLOCK_TAGS.has(child.tagName)) {
       flush()
       const hasBlockChildren = Array.from(child.children).some((c) => BLOCK_TAGS.has(c.tagName))
