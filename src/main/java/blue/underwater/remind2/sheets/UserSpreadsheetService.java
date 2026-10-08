@@ -104,8 +104,12 @@ public class UserSpreadsheetService {
      * Sheets, que corre las demás columnas sin reescribir ninguna celda. Corre
      * una vez por usuario y por proceso (después el id queda en caché), y deja
      * de hacer nada apenas A1 ya no dice "Date".
+     *
+     * synchronized: al abrir la app llegan varios pedidos juntos y todos pasan
+     * por acá antes de que el id esté en caché. Sin esto dos leían "Date" a la
+     * vez y cada uno movía una columna — la planilla quedaba corrida dos veces.
      */
-    private void migrateLegacyLayout(Credential credential, NetHttpTransport httpTransport, String spreadsheetId)
+    private synchronized void migrateLegacyLayout(Credential credential, NetHttpTransport httpTransport, String spreadsheetId)
             throws IOException {
         Sheets sheets = new Sheets.Builder(httpTransport, GsonFactory.getDefaultInstance(), credential)
                 .setApplicationName(SPREADSHEET_NAME)
