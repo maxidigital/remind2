@@ -25,7 +25,7 @@ public class StaticCacheHeadersFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         if (path.startsWith("/assets/")) {
             response.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-        } else if (path.equals("/") || path.equals("/index.html")) {
+        } else if (path.equals("/") || path.equals("/index.html") || path.equals("/sw.js")) {
             response.setHeader("Cache-Control", "no-cache");
         }
         chain.doFilter(request, response);

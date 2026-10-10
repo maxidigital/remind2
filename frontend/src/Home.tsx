@@ -44,6 +44,22 @@ export default function Home({ email, onLoggedOut, onOpenBreathwork }: Props) {
     return () => document.removeEventListener('visibilitychange', handleForeground)
   }, [])
 
+  // Tocar la notificación siempre abre las caritas, haya pasado o no el
+  // intervalo: con la app cerrada llega como "/?mood=1" (ver sw.js), y con la
+  // app abierta como un mensaje del service worker.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has('mood')) {
+      setAskingMood(true)
+      window.history.replaceState(null, '', window.location.pathname)
+    }
+    if (!('serviceWorker' in navigator)) return
+    function handleMessage(event: MessageEvent) {
+      if (event.data?.type === 'ask-mood') setAskingMood(true)
+    }
+    navigator.serviceWorker.addEventListener('message', handleMessage)
+    return () => navigator.serviceWorker.removeEventListener('message', handleMessage)
+  }, [])
+
   const handlePullRefresh = useCallback(async () => {
     await notesListRef.current?.refresh()
   }, [])

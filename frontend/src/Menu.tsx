@@ -3,6 +3,7 @@ import AboutDialog from './AboutDialog'
 import { fetchSpreadsheetUrl } from './api'
 import { isLocationEnabled, setLocationEnabled } from './location'
 import { isMoodEnabled, setMoodEnabled } from './mood'
+import { disablePush, enablePush, isPushEnabled, isPushSupported } from './push'
 
 type Theme = 'light' | 'dark'
 
@@ -25,6 +26,42 @@ export default function Menu({ email, onLogout }: Props) {
   const [theme, setTheme] = useState<Theme>(getInitialTheme)
   const [locationOn, setLocationOn] = useState(isLocationEnabled)
   const [moodOn, setMoodOn] = useState(isMoodEnabled)
+  const [pushOn, setPushOn] = useState(false)
+  const [pushBusy, setPushBusy] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
+
+  useEffect(() => {
+    isPushEnabled()
+      .then(setPushOn)
+      .catch(() => {})
+  }, [])
+
+  async function handleTogglePush() {
+    setOpen(false)
+    if (!isPushSupported()) {
+      setNotice(
+        'Este navegador no permite notificaciones. En iPhone, agregá la app a la pantalla de inicio ' +
+          '(Compartir → Agregar a inicio), abrila desde ahí y activalas de nuevo.',
+      )
+      return
+    }
+    setPushBusy(true)
+    try {
+      if (pushOn) {
+        await disablePush()
+        setPushOn(false)
+      } else if ((await enablePush()) === 'enabled') {
+        setPushOn(true)
+        setNotice('Notificaciones activadas. Te tiene que llegar una de prueba ahora.')
+      } else {
+        setNotice('El permiso de notificaciones está bloqueado. Habilitalo en los ajustes del teléfono para esta app.')
+      }
+    } catch {
+      setNotice('No se pudieron cambiar las notificaciones. Probá de nuevo.')
+    } finally {
+      setPushBusy(false)
+    }
+  }
   const [spreadsheetLoading, setSpreadsheetLoading] = useState(false)
   const [spreadsheetUrl, setSpreadsheetUrl] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -126,6 +163,9 @@ export default function Menu({ email, onLogout }: Props) {
           >
             {moodOn ? 'No preguntar cómo estoy' : 'Preguntar cómo estoy'}
           </button>
+          <button className="menu-item" onClick={handleTogglePush} disabled={pushBusy}>
+            {pushOn ? 'Desactivar notificaciones' : 'Activar notificaciones'}
+          </button>
           <button className="menu-item" onClick={handleOpenSpreadsheet} disabled={spreadsheetLoading}>
             Abrir planilla
           </button>
@@ -145,6 +185,18 @@ export default function Menu({ email, onLogout }: Props) {
         </div>
       )}
       {aboutOpen && <AboutDialog email={email} onClose={() => setAboutOpen(false)} />}
+      {notice && (
+        <div className="confirm-backdrop" onClick={() => setNotice(null)}>
+          <div className="confirm-dialog" role="alertdialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <p>{notice}</p>
+            <div className="confirm-buttons">
+              <button className="confirm-cancel" onClick={() => setNotice(null)}>
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

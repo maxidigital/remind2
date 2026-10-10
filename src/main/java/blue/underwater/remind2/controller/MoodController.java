@@ -5,6 +5,7 @@ import blue.underwater.remind2.auth.SessionCookie;
 import blue.underwater.remind2.auth.UserCredentialsStore;
 import blue.underwater.remind2.exception.UpstreamServiceException;
 import blue.underwater.remind2.geo.PlaceService;
+import blue.underwater.remind2.push.PushService;
 import blue.underwater.remind2.sheets.MoodSheetService;
 import blue.underwater.remind2.sheets.UserSpreadsheetService;
 import com.google.api.client.auth.oauth2.Credential;
@@ -30,6 +31,7 @@ public class MoodController {
     private final UserSpreadsheetService spreadsheetService;
     private final MoodSheetService moodSheetService;
     private final PlaceService placeService;
+    private final PushService pushService;
     private final AccessLog accessLog;
 
     public MoodController(SessionCookie sessionCookie,
@@ -37,12 +39,14 @@ public class MoodController {
                            UserSpreadsheetService spreadsheetService,
                            MoodSheetService moodSheetService,
                            PlaceService placeService,
+                           PushService pushService,
                            AccessLog accessLog) {
         this.sessionCookie = sessionCookie;
         this.credentialsStore = credentialsStore;
         this.spreadsheetService = spreadsheetService;
         this.moodSheetService = moodSheetService;
         this.placeService = placeService;
+        this.pushService = pushService;
         this.accessLog = accessLog;
     }
 
@@ -72,6 +76,7 @@ public class MoodController {
             log.error("Saving mood to spreadsheet failed for user {}: {}", identity.userId(), e.toString(), e);
             throw new UpstreamServiceException("SHEETS_FAILED", e);
         }
+        pushService.markAnswered(identity.userId());
         accessLog.record(identity.email(), "mood", Map.of("mood", request.mood()));
     }
 }
