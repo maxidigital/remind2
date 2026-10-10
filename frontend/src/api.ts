@@ -114,6 +114,17 @@ export async function saveTextNote(text: string, id: string, coords?: Coords | n
   }
 }
 
+export async function saveMood(mood: number, coords?: Coords | null): Promise<void> {
+  const res = await fetch('/api/mood', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mood, lat: coords?.lat, lng: coords?.lng }),
+  })
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`)
+  }
+}
+
 export async function updateNote(row: number, text: string): Promise<void> {
   const res = await fetch(`/api/notes/${row}`, {
     method: 'PUT',

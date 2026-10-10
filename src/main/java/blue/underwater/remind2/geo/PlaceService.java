@@ -39,6 +39,21 @@ public class PlaceService {
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
     private final ObjectMapper json = new ObjectMapper();
 
+    /**
+     * Contenido de una celda Location de la planilla: el nombre del lugar
+     * seguido de las coordenadas entre paréntesis, solo las coordenadas si no
+     * se pudo averiguar el lugar, o vacío si no hay ubicación (opción apagada
+     * en el menú, permiso denegado o GPS sin señal).
+     */
+    public String locationCell(Double lat, Double lng) {
+        if (lat == null || lng == null || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+            return "";
+        }
+        String coordinates = String.format(Locale.ROOT, "(%.5f, %.5f)", lat, lng);
+        String place = describe(lat, lng);
+        return place == null ? coordinates : place + " " + coordinates;
+    }
+
     /** Nombre del lugar, o null si no se pudo averiguar. */
     public String describe(double lat, double lng) {
         try {

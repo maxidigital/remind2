@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.Instant;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -175,23 +174,8 @@ public class NotesController {
         }
     }
 
-    /**
-     * Contenido de la columna Location: el nombre del lugar seguido de las
-     * coordenadas entre paréntesis, solo las coordenadas si no se pudo
-     * averiguar el lugar, o vacío si la nota vino sin ubicación (opción
-     * apagada en el menú, permiso denegado o GPS sin señal).
-     */
-    private String describeLocation(Double lat, Double lng) {
-        if (lat == null || lng == null || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
-            return "";
-        }
-        String coordinates = String.format(Locale.ROOT, "(%.5f, %.5f)", lat, lng);
-        String place = placeService.describe(lat, lng);
-        return place == null ? coordinates : place + " " + coordinates;
-    }
-
     private Map<String, String> createTextNote(AuthenticatedUser user, String text, String noteId, Double lat, Double lng) {
-        String location = describeLocation(lat, lng);
+        String location = placeService.locationCell(lat, lng);
         String spreadsheetId;
         try {
             spreadsheetId = spreadsheetService.getOrCreateSpreadsheetId(user.userId(), user.credential());
@@ -223,7 +207,7 @@ public class NotesController {
             return Map.of("text", "");
         }
 
-        String location = describeLocation(lat, lng);
+        String location = placeService.locationCell(lat, lng);
         Instant createdAt = Instant.now();
         String spreadsheetId;
         try {

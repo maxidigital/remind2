@@ -8,6 +8,8 @@ import AppSwitcher from './AppSwitcher'
 import { newId, startAutoRetry } from './offlineQueue'
 import RichTextEditor from './RichTextEditor'
 import { requestCoords, settleCoords, type Coords } from './location'
+import MoodPrompt from './MoodPrompt'
+import { shouldAskMood } from './mood'
 
 interface Props {
   email: string
@@ -30,6 +32,17 @@ export default function Home({ email, onLoggedOut, onOpenBreathwork }: Props) {
   }
 
   useEffect(() => startAutoRetry(), [])
+
+  // La pregunta de ánimo se evalúa al abrir la app y cada vez que vuelve a
+  // primer plano: es el único momento en que una app web puede preguntar.
+  const [askingMood, setAskingMood] = useState(shouldAskMood)
+  useEffect(() => {
+    function handleForeground() {
+      if (document.visibilityState === 'visible' && shouldAskMood()) setAskingMood(true)
+    }
+    document.addEventListener('visibilitychange', handleForeground)
+    return () => document.removeEventListener('visibilitychange', handleForeground)
+  }, [])
 
   const handlePullRefresh = useCallback(async () => {
     await notesListRef.current?.refresh()
@@ -65,6 +78,9 @@ export default function Home({ email, onLoggedOut, onOpenBreathwork }: Props) {
       </main>
 
       <Recorder onSaved={() => setRefreshKey((k) => k + 1)} onWrite={handleStartWriting} />
+
+      {/* No se superpone al editor: espera a que se cierre. */}
+      {askingMood && !writingId && <MoodPrompt onClose={() => setAskingMood(false)} />}
 
       {writingId && (
         <RichTextEditor

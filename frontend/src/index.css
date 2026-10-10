@@ -542,6 +542,58 @@ body {
   text-align: center;
 }
 
+.mood-dialog {
+  text-align: center;
+}
+
+.mood-faces {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.mood-face {
+  flex: 1;
+  aspect-ratio: 1;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card-bg);
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.mood-face:active {
+  transform: scale(0.92);
+}
+
+.mood-face:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.mood-face--saving:disabled {
+  opacity: 1;
+  border-color: var(--brand-primary);
+}
+
+.mood-dialog .mood-error {
+  color: var(--danger);
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.mood-snooze {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  padding: 0.4rem 1rem;
+  cursor: pointer;
+}
+
 .about-icon {
   height: 48px;
   width: auto;
