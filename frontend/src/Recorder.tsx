@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { saveNote, SaveNoteError } from './api'
 import { enqueue, newId, removeItem, markBlocked, markInFlight, clearInFlight } from './offlineQueue'
 import EmptyRecordingDialog from './EmptyRecordingDialog'
@@ -51,8 +51,26 @@ export default function Recorder({ onSaved, onWrite }: Props) {
 
   useWakeLock(status === 'recording')
 
+  // Si la app deja de estar visible mientras se graba (pantalla bloqueada,
+  // cambio de app), el sistema corta el micrófono. Se cierra la grabación en
+  // ese momento, mientras el archivo todavía se puede terminar bien: en iOS un
+  // mp4 cortado de golpe queda ilegible y la nota se pierde.
+  useEffect(() => {
+    if (status !== 'recording') return
+    function handleHidden() {
+      if (document.visibilityState === 'hidden') stop()
+    }
+    document.addEventListener('visibilitychange', handleHidden)
+    return () => document.removeEventListener('visibilitychange', handleHidden)
+  }, [status])
+
   async function start() {
     setError(null)
+
+    // Se pide al arrancar para que el GPS tenga toda la grabación para
+    // responder, y antes del micrófono para que el aviso de permiso de
+    // ubicación no aparezca con la grabación ya en curso.
+    coordsRef.current = requestCoords()
 
     let stream: MediaStream
     try {
@@ -61,9 +79,6 @@ export default function Recorder({ onSaved, onWrite }: Props) {
       setError('No se pudo acceder al micrófono')
       return
     }
-
-    // Se pide al arrancar para que el GPS tenga toda la grabación para responder.
-    coordsRef.current = requestCoords()
 
     const mimeType = pickMimeType()
     const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream)
@@ -153,6 +168,13 @@ export default function Recorder({ onSaved, onWrite }: Props) {
       if (err instanceof SaveNoteError && err.status === 413) {
         if (queueId) await markBlocked(queueId, 'TOO_LARGE')
         setError('La nota es muy larga para subirla. Grabá una más corta.')
+        setStatus('error')
+        return
+      }
+
+      if (err instanceof SaveNoteError && err.status === 422) {
+        if (queueId) await markBlocked(queueId, 'UNREADABLE')
+        setError('La grabación quedó dañada y no se pudo transcribir.')
         setStatus('error')
         return
       }

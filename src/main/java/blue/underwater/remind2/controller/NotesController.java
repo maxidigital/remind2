@@ -4,12 +4,14 @@ import blue.underwater.remind2.AccessLog;
 import blue.underwater.remind2.auth.SessionCookie;
 import blue.underwater.remind2.auth.UserCredentialsStore;
 import blue.underwater.remind2.drive.AudioDriveService;
+import blue.underwater.remind2.exception.UnreadableAudioException;
 import blue.underwater.remind2.exception.UpstreamServiceException;
 import blue.underwater.remind2.geo.PlaceService;
 import blue.underwater.remind2.sheets.NotesSheetService;
 import blue.underwater.remind2.sheets.UserSpreadsheetService;
 import blue.underwater.remind2.transcription.WhisperTranscriptionService;
 import com.google.api.client.auth.oauth2.Credential;
+import com.theokanning.openai.OpenAiHttpException;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -198,6 +200,21 @@ public class NotesController {
         String text;
         try {
             text = transcriptionService.transcribe(audio);
+        } catch (OpenAiHttpException e) {
+            if (e.statusCode != 400) {
+                log.error("Transcription failed for user {}: {}", user.userId(), e.toString(), e);
+                throw new UpstreamServiceException("TRANSCRIPTION_FAILED", e);
+            }
+            // 400 = Whisper no puede leer este archivo. No hay nota que guardar,
+            // pero el audio es lo único que queda de lo grabado: se sube igual a
+            // Drive (best effort) por si se puede recuperar con otra herramienta.
+            try {
+                audioDriveService.upload(user.userId(), user.credential(), audioBytes,
+                        audio.getOriginalFilename(), audio.getContentType(), Instant.now(), "-sin-transcribir");
+            } catch (Exception driveError) {
+                log.error("Saving unreadable audio to Drive failed for user {}: {}", user.userId(), driveError.toString());
+            }
+            throw new UnreadableAudioException(e);
         } catch (Exception e) {
             log.error("Transcription failed for user {}: {}", user.userId(), e.toString(), e);
             throw new UpstreamServiceException("TRANSCRIPTION_FAILED", e);
@@ -222,7 +239,7 @@ public class NotesController {
         // no devolvemos error — el cliente reintentaría y duplicaría la fila.
         try {
             audioDriveService.upload(user.userId(), user.credential(), audioBytes,
-                    audio.getOriginalFilename(), audio.getContentType(), createdAt);
+                    audio.getOriginalFilename(), audio.getContentType(), createdAt, "");
         } catch (Exception e) {
             log.error("Saving audio to Drive failed for user {}: {}", user.userId(), e.toString(), e);
         }

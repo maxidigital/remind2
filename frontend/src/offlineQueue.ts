@@ -12,7 +12,7 @@ export interface QueueItem {
   lastError?: string
   lastAttemptAt?: number
   status: 'pending' | 'blocked'
-  blockedReason?: 'AUTH_EXPIRED' | 'TOO_LARGE'
+  blockedReason?: 'AUTH_EXPIRED' | 'TOO_LARGE' | 'UNREADABLE'
 }
 
 const DB_NAME = 'remind2-offline-queue'
@@ -185,6 +185,10 @@ export async function attemptUpload(item: QueueItem): Promise<AttemptResult> {
         }
         if (err.status === 413) {
           await markBlocked(item.id, 'TOO_LARGE')
+          return 'blocked'
+        }
+        if (err.status === 422) {
+          await markBlocked(item.id, 'UNREADABLE')
           return 'blocked'
         }
       }

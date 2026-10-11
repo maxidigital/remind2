@@ -18,18 +18,30 @@ export function useWakeLock(active: boolean): void {
           return
         }
         wakeLockRef.current = sentinel
+        // El sistema suelta el wake lock por su cuenta (pestaña oculta, aviso
+        // de permiso, etc.) sin avisar por ningún otro lado. Si la referencia
+        // quedara apuntando al lock ya soltado, al volver a foreground se
+        // creería que sigue activo, no se pediría de nuevo y la pantalla se
+        // apagaría a mitad de la grabación.
+        sentinel.addEventListener('release', () => {
+          if (wakeLockRef.current !== sentinel) return
+          wakeLockRef.current = null
+          if (!cancelled && active && document.visibilityState === 'visible') acquire()
+        })
       } catch {
         // el navegador puede rechazar el pedido (pestaña oculta, batería baja, etc.); no es fatal
       }
     }
 
     async function release() {
+      const sentinel = wakeLockRef.current
+      // Se limpia antes de soltar para que el handler de 'release' no lo vuelva a pedir.
+      wakeLockRef.current = null
       try {
-        await wakeLockRef.current?.release()
+        await sentinel?.release()
       } catch {
         // ya liberado o no soportado
       }
-      wakeLockRef.current = null
     }
 
     function handleVisibilityChange() {

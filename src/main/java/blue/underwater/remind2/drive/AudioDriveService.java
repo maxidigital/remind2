@@ -30,7 +30,7 @@ public class AudioDriveService {
     private final ConcurrentHashMap<String, String> folderIdCache = new ConcurrentHashMap<>();
 
     public void upload(String userId, Credential credential, byte[] audio, String originalFilename,
-                       String contentType, Instant recordedAt)
+                       String contentType, Instant recordedAt, String nameSuffix)
             throws IOException, GeneralSecurityException {
         Drive drive = buildDriveClient(credential);
         String folderId = getOrCreateFolderId(userId, drive);
@@ -38,7 +38,7 @@ public class AudioDriveService {
         // Mismo instante que la columna Date de la planilla, para poder cruzar
         // audio y nota. Sin ":" porque varios sistemas de archivos no los aceptan
         // al descargar.
-        String name = recordedAt.toString().replace(':', '-') + extensionOf(originalFilename);
+        String name = recordedAt.toString().replace(':', '-') + nameSuffix + extensionOf(originalFilename);
         String mimeType = contentType != null ? contentType : "audio/webm";
 
         File metadata = new File()

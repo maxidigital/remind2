@@ -4,6 +4,7 @@ import { formatTime } from './time'
 function labelFor(item: QueueItem): string {
   if (item.blockedReason === 'AUTH_EXPIRED') return 'Sesión expirada'
   if (item.blockedReason === 'TOO_LARGE') return 'Nota muy larga'
+  if (item.blockedReason === 'UNREADABLE') return 'Audio dañado'
   if (item.status === 'blocked') return 'No se pudo subir'
   return 'Audio pendiente'
 }

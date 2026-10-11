@@ -1,5 +1,6 @@
 package blue.underwater.remind2.controller;
 
+import blue.underwater.remind2.exception.UnreadableAudioException;
 import blue.underwater.remind2.exception.UpstreamServiceException;
 import com.google.api.client.auth.oauth2.TokenResponseException;
 import org.slf4j.Logger;
@@ -22,6 +23,15 @@ public class ApiExceptionHandler {
         log.warn("Upload rejected, exceeds max size: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
                 .body(Map.of("error", "UPLOAD_TOO_LARGE"));
+    }
+
+    // 422 y no 5xx: el cliente reintenta solo los 5xx, y este audio va a fallar
+    // siempre — devolver 502 dejaba la nota "pendiente" reintentando para siempre.
+    @ExceptionHandler(UnreadableAudioException.class)
+    public ResponseEntity<Map<String, String>> handleUnreadableAudio(UnreadableAudioException ex) {
+        log.warn("Audio rejected by transcription as unreadable: {}", ex.getCause().toString());
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(Map.of("error", "AUDIO_UNREADABLE"));
     }
 
     @ExceptionHandler(UpstreamServiceException.class)
