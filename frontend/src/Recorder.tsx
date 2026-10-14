@@ -5,26 +5,9 @@ import EmptyRecordingDialog from './EmptyRecordingDialog'
 import { AudioLevelMonitor } from './audioLevel'
 import { requestCoords, settleCoords, type Coords } from './location'
 import { useWakeLock } from './useWakeLock'
+import { extensionFor, pickMimeType } from './audioFormat'
 
 type Status = 'idle' | 'recording' | 'saving' | 'error'
-
-const MIME_CANDIDATES = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
-
-function pickMimeType(): string {
-  if (typeof MediaRecorder === 'undefined') {
-    return ''
-  }
-  for (const type of MIME_CANDIDATES) {
-    if (MediaRecorder.isTypeSupported(type)) {
-      return type
-    }
-  }
-  return ''
-}
-
-function extensionFor(mimeType: string): string {
-  return mimeType.includes('mp4') ? 'mp4' : 'webm'
-}
 
 function formatDuration(totalSeconds: number): string {
   const minutes = Math.floor(totalSeconds / 60)

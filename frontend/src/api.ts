@@ -114,15 +114,27 @@ export async function saveTextNote(text: string, id: string, coords?: Coords | n
   }
 }
 
-export async function saveMood(mood: number, coords?: Coords | null): Promise<void> {
+export async function saveMood(mood: number, comment: string, coords?: Coords | null): Promise<void> {
   const res = await fetch('/api/mood', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ mood, lat: coords?.lat, lng: coords?.lng }),
+    body: JSON.stringify({ mood, comment, lat: coords?.lat, lng: coords?.lng }),
   })
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}`)
   }
+}
+
+// Comentario dictado en la pregunta de ánimo: solo transcribe, no guarda nada.
+export async function transcribeMoodComment(blob: Blob, filename: string): Promise<string> {
+  const formData = new FormData()
+  formData.append('audio', blob, filename)
+  const res = await fetch('/api/mood/transcribe', { method: 'POST', body: formData })
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`)
+  }
+  const data = await res.json()
+  return data.text
 }
 
 export async function updateNote(row: number, text: string): Promise<void> {

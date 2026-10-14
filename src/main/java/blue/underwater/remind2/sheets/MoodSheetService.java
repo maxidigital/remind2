@@ -21,7 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Registro de "¿cómo estás?" (1 a 5) en una hoja aparte de la misma planilla,
- * para no mezclarlo con las notas. Columnas: A = Date, B = Mood, C = Location.
+ * para no mezclarlo con las notas. Columnas: A = Date, B = Mood, C = Location,
+ * D = Comment (lo que se escribió o dictó junto con la carita; puede ir vacío).
  *
  * La hoja se agrega al final: las notas se leen y escriben con rangos sin
  * nombre de hoja ("A:F"), que Sheets resuelve contra la primera, así que la
@@ -31,11 +32,13 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MoodSheetService {
 
     private static final String SHEET_TITLE = "Ánimo";
-    private static final String RANGE = "'" + SHEET_TITLE + "'!A:C";
+    private static final String RANGE = "'" + SHEET_TITLE + "'!A:D";
+    private static final String HEADER_RANGE = "'" + SHEET_TITLE + "'!A1:D1";
 
     private final Set<String> spreadsheetsWithMoodSheet = ConcurrentHashMap.newKeySet();
 
-    public void append(String spreadsheetId, Credential credential, int mood, Instant at, String location)
+    public void append(String spreadsheetId, Credential credential, int mood, Instant at, String location,
+                       String comment)
             throws IOException, GeneralSecurityException {
         Sheets sheets = new Sheets.Builder(GoogleNetHttpTransport.newTrustedTransport(),
                 GsonFactory.getDefaultInstance(), credential)
@@ -43,7 +46,7 @@ public class MoodSheetService {
                 .build();
         ensureSheet(sheets, spreadsheetId);
 
-        ValueRange row = new ValueRange().setValues(List.of(List.<Object>of(at.toString(), mood, location)));
+        ValueRange row = new ValueRange().setValues(List.of(List.<Object>of(at.toString(), mood, location, comment)));
         sheets.spreadsheets().values()
                 .append(spreadsheetId, RANGE, row)
                 .setValueInputOption("RAW")
@@ -68,12 +71,14 @@ public class MoodSheetService {
                     .batchUpdate(spreadsheetId, new BatchUpdateSpreadsheetRequest()
                             .setRequests(List.of(new Request().setAddSheet(addSheet))))
                     .execute();
-            sheets.spreadsheets().values()
-                    .update(spreadsheetId, "'" + SHEET_TITLE + "'!A1:C1",
-                            new ValueRange().setValues(List.of(List.<Object>of("Date", "Mood", "Location"))))
-                    .setValueInputOption("RAW")
-                    .execute();
         }
+        // También en hojas ya existentes: las creadas antes del comentario no
+        // tienen el título de la columna D.
+        sheets.spreadsheets().values()
+                .update(spreadsheetId, HEADER_RANGE,
+                        new ValueRange().setValues(List.of(List.<Object>of("Date", "Mood", "Location", "Comment"))))
+                .setValueInputOption("RAW")
+                .execute();
         spreadsheetsWithMoodSheet.add(spreadsheetId);
     }
 }

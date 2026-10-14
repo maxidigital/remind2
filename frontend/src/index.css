@@ -574,9 +574,73 @@ body {
   cursor: default;
 }
 
-.mood-face--saving:disabled {
-  opacity: 1;
+.mood-face--selected {
   border-color: var(--brand-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand-primary) 45%, transparent);
+  transform: scale(1.06);
+}
+
+.mood-comment {
+  position: relative;
+  margin-bottom: 0.75rem;
+}
+
+.mood-comment textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  resize: none;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card-bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem; /* menos de 16px hace que iOS haga zoom al enfocar */
+  padding: 0.6rem 3rem 0.6rem 0.7rem;
+}
+
+.mood-comment textarea:focus {
+  outline: none;
+  border-color: var(--brand-primary);
+}
+
+.mood-mic {
+  position: absolute;
+  right: 0.4rem;
+  bottom: 0.4rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: var(--border);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.mood-mic--recording {
+  background: var(--danger);
+  color: white;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.mood-mic:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.mood-save {
+  display: block;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.mood-save:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .mood-dialog .mood-error {
