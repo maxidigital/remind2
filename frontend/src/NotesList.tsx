@@ -1,6 +1,7 @@
 import { Fragment, forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import { archiveNote, deleteNote, fetchNotes, updateNote, updateNoteColor, type NoteEntry } from './api'
 import { usePendingQueue, retryItem, discardItem, subscribe, type QueueItem } from './offlineQueue'
+import { cachedNotes, cacheNotes } from './cache'
 import NoteCard from './NoteCard'
 import PendingNoteRow from './PendingNoteRow'
 
@@ -49,7 +50,8 @@ export interface NotesListHandle {
 }
 
 const NotesList = forwardRef<NotesListHandle, Props>(function NotesList({ refreshKey }, ref) {
-  const [notes, setNotes] = useState<NoteEntry[] | null>(null)
+  // Se arranca con las notas guardadas y se reemplazan cuando llega la respuesta.
+  const [notes, setNotes] = useState<NoteEntry[] | null>(cachedNotes)
   const [expandedRow, setExpandedRow] = useState<number | null>(null)
   const [collapsedDays, setCollapsedDays] = useState<Set<string>>(new Set())
   const pending = usePendingQueue()
@@ -66,12 +68,18 @@ const NotesList = forwardRef<NotesListHandle, Props>(function NotesList({ refres
   function reload(): Promise<void> {
     return fetchNotes()
       .then(setNotes)
-      .catch(() => setNotes([]))
+      // Si falla (p. ej. sin conexión) se siguen mostrando las que había.
+      .catch(() => setNotes((prev) => prev ?? []))
   }
 
   useEffect(() => {
     reload()
   }, [refreshKey])
+
+  // Los cambios optimistas (archivar, editar, color) también quedan en la caché.
+  useEffect(() => {
+    if (notes) cacheNotes(notes)
+  }, [notes])
 
   useImperativeHandle(ref, () => ({ refresh: reload }), [])
 
