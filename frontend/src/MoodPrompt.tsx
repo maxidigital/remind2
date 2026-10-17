@@ -25,8 +25,9 @@ export default function MoodPrompt({ onClose }: Props) {
   const [voice, setVoice] = useState<VoiceStatus>('idle')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // Se pide al mostrar la pregunta, para que esté lista al guardar.
-  const coordsRef = useRef(requestCoords())
+  // Se pide al mostrar la pregunta, para que esté lista al guardar. Con
+  // inicialización perezosa: `useRef(requestCoords())` la pediría en cada render.
+  const [coords] = useState(requestCoords)
   const recorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const streamRef = useRef<MediaStream | null>(null)
@@ -122,7 +123,7 @@ export default function MoodPrompt({ onClose }: Props) {
     setSaving(true)
     setError(null)
     try {
-      await saveMood(mood, comment.trim(), await settleCoords(coordsRef.current))
+      await saveMood(mood, comment.trim(), await settleCoords(coords))
       markMoodAnswered()
       onClose()
     } catch {

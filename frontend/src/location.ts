@@ -28,6 +28,17 @@ export function setLocationEnabled(enabled: boolean): void {
  */
 export function requestCoords(): Promise<Coords | null> {
   if (!isLocationEnabled() || !('geolocation' in navigator)) return Promise.resolve(null)
+  // En una app instalada en iOS cada consulta al GPS puede volver a mostrar
+  // el aviso de permiso: se reusa la última mientras siga siendo reciente.
+  if (lastRequest && Date.now() - lastRequest.at < POSITION_MAX_AGE_MS) return lastRequest.coords
+  const coords = queryPosition()
+  lastRequest = { at: Date.now(), coords }
+  return coords
+}
+
+let lastRequest: { at: number; coords: Promise<Coords | null> } | null = null
+
+function queryPosition(): Promise<Coords | null> {
   return new Promise((resolve) => {
     navigator.geolocation.getCurrentPosition(
       (position) => resolve({ lat: position.coords.latitude, lng: position.coords.longitude }),
