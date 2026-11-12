@@ -9,7 +9,7 @@ import { newId, startAutoRetry } from './offlineQueue'
 import RichTextEditor from './RichTextEditor'
 import { requestCoords, settleCoords, type Coords } from './location'
 import MoodPrompt from './MoodPrompt'
-import { shouldAskMood } from './mood'
+import { isMoodEnabled, shouldAskMood } from './mood'
 
 interface Props {
   email: string
@@ -44,17 +44,17 @@ export default function Home({ email, onLoggedOut, onOpenBreathwork }: Props) {
     return () => document.removeEventListener('visibilitychange', handleForeground)
   }, [])
 
-  // Tocar la notificación siempre abre las caritas, haya pasado o no el
-  // intervalo: con la app cerrada llega como "/?mood=1" (ver sw.js), y con la
-  // app abierta como un mensaje del service worker.
+  // Tocar la notificación abre las caritas, haya pasado o no el intervalo
+  // (salvo que se haya desactivado la pregunta): con la app cerrada llega como
+  // "/?mood=1" (ver sw.js), y con la app abierta como un mensaje del service worker.
   useEffect(() => {
     if (new URLSearchParams(window.location.search).has('mood')) {
-      setAskingMood(true)
+      if (isMoodEnabled()) setAskingMood(true)
       window.history.replaceState(null, '', window.location.pathname)
     }
     if (!('serviceWorker' in navigator)) return
     function handleMessage(event: MessageEvent) {
-      if (event.data?.type === 'ask-mood') setAskingMood(true)
+      if (event.data?.type === 'ask-mood' && isMoodEnabled()) setAskingMood(true)
     }
     navigator.serviceWorker.addEventListener('message', handleMessage)
     return () => navigator.serviceWorker.removeEventListener('message', handleMessage)

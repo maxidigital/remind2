@@ -36,6 +36,24 @@ export default function Menu({ email, onLogout }: Props) {
       .catch(() => {})
   }, [])
 
+  // Las notificaciones solo existen para la pregunta de ánimo: si se deja de
+  // preguntar, se dan de baja también, o el servidor seguiría mandándolas.
+  async function handleToggleMood() {
+    const enabled = !moodOn
+    setMoodEnabled(enabled)
+    setMoodOn(enabled)
+    if (enabled || !pushOn) return
+    setPushBusy(true)
+    try {
+      await disablePush()
+      setPushOn(false)
+    } catch {
+      setNotice('No se pudieron desactivar las notificaciones. Probá de nuevo desde el menú.')
+    } finally {
+      setPushBusy(false)
+    }
+  }
+
   async function handleTogglePush() {
     setOpen(false)
     if (!isPushSupported()) {
@@ -156,16 +174,16 @@ export default function Menu({ email, onLogout }: Props) {
           </button>
           <button
             className="menu-item"
-            onClick={() => {
-              setMoodEnabled(!moodOn)
-              setMoodOn(!moodOn)
-            }}
+            onClick={handleToggleMood}
+            disabled={pushBusy}
           >
             {moodOn ? 'No preguntar cómo estoy' : 'Preguntar cómo estoy'}
           </button>
-          <button className="menu-item" onClick={handleTogglePush} disabled={pushBusy}>
-            {pushOn ? 'Desactivar notificaciones' : 'Activar notificaciones'}
-          </button>
+          {moodOn && (
+            <button className="menu-item" onClick={handleTogglePush} disabled={pushBusy}>
+              {pushOn ? 'Desactivar notificaciones' : 'Activar notificaciones'}
+            </button>
+          )}
           <button className="menu-item" onClick={handleOpenSpreadsheet} disabled={spreadsheetLoading}>
             Abrir planilla
           </button>
